@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- **The map comes first on a laptop:**
+  - **Details closed by default.** The details panel starts closed and slides open when you pick a box, without moving the map. **P** still toggles it, and keeping it open is remembered.
+  - **Overview folded to one line.** The overview's description folds to one line with **More** / **Less** on every screen, not only phones, so it no longer covers the top of the map.
+  - **Tour opens only from its button where the map can't remember it ran.** It used to start on its own on every visit when storage is blocked, as in a sandboxed frame. It still starts once on a first visit where the map can remember that it ran.
+
 ## 0.6.1 (2026-11-01)
 
 - **Fewer false alarms in Health** (thanks to the user who reported these):

@@ -150,7 +150,12 @@ body.in-flow #context { opacity: 0; }
 #context::before { content: ""; position: absolute; inset: -28px -60px -28px -40px; background: radial-gradient(closest-side, rgba(var(--bg-rgb), .9), rgba(var(--bg-rgb), 0)); z-index: -1; }
 #context h1 { margin: 6px 0 4px; font-size: 24px; font-weight: 600; letter-spacing: -.025em; }
 #context p { margin: 0; color: var(--text-2); line-height: 1.55; font-size: 14px; }
-.ctx-more { display: none; } /* the More / Less toggle under the description is for phones */
+.ctx-more { display: none; } /* the More / Less toggle under the description shows only when there's more to read */
+/* the description folds to one line with a More / Less toggle, so the overview doesn't sit on the map */
+#context.folded .cd { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; overflow: hidden; }
+#context.folded .cx { display: none; }
+#context .ctx-more:not([hidden]) { display: inline-flex; align-items: center; min-height: 32px; margin: 0 0 0 -10px; padding: 0 10px; border: 0; border-radius: 999px; background: none; color: var(--text); font: inherit; font-size: 13px; font-weight: 500; cursor: pointer; pointer-events: auto; }
+#context .ctx-more:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; }
 #ask-live { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
 /* ---------- cards ---------- */
@@ -524,9 +529,6 @@ html.wk svg.dim .node:not(.hl) foreignObject { opacity: .28; }
   #crumbs button:not(.cur), #crumbs .sep { display: none; } /* only where you are; the Up arrow goes back */
   #context { left: 16px; right: 16px; max-width: none; }
   #context h1 { font-size: 20px; }
-  /* the description folds to one line with a More / Less toggle, so it doesn't fill the screen */
-  #context.folded .cd { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; overflow: hidden; }
-  #context.folded .cx { display: none; }
   #context .ctx-more:not([hidden]) { display: inline-flex; align-items: center; min-height: 44px; margin: -8px 0 -12px -10px; padding: 0 10px; border: 0; border-radius: 999px; background: none; color: var(--text); font: inherit; font-size: 13px; font-weight: 500; cursor: pointer; pointer-events: auto; }
   #context .ctx-more:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; }
   /* the warning about connecting an AI tool shows only while someone is using the ask bar */
@@ -639,7 +641,7 @@ const KIND_LABEL = new Proxy({}, { get: (_, k) => (technical() ? KIND_TECH : KIN
 let technicalFlag = false;
 const technical = () => technicalFlag;
 const METHODS = { GET: 1, POST: 1, PUT: 1, PATCH: 1, DELETE: 1, CALL: 1 };
-const store = { get(k, d) { try { return JSON.parse(localStorage.getItem('floorplan:' + k) ?? localStorage.getItem('show-code:' + k)) ?? d; } catch { return d; } }, set(k, v) { try { localStorage.setItem('floorplan:' + k, JSON.stringify(v)); } catch {} } };
+const store = { ok: (() => { try { localStorage.setItem('floorplan:probe', '1'); localStorage.removeItem('floorplan:probe'); return true; } catch { return false; } })(), get(k, d) { try { return JSON.parse(localStorage.getItem('floorplan:' + k) ?? localStorage.getItem('show-code:' + k)) ?? d; } catch { return d; } }, set(k, v) { try { localStorage.setItem('floorplan:' + k, JSON.stringify(v)); } catch {} } };
 const h = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const fmt = (n) => n >= 10000 ? Math.round(n / 1000) + 'k' : n >= 1000 ? (n / 1000).toFixed(1) + 'k' : String(n);
 const dirname = (p) => p.includes('/') ? p.slice(0, p.lastIndexOf('/')) : '';
@@ -1407,8 +1409,8 @@ function centerOn(item) {
 // ======================= selection =======================
 function select(sel) {
   custom.panel = null; state.selected = sel; if (typeof sel === 'string' || sel === null) setHash(state.container, sel); applySelection(); renderPanel();
-  // on a phone, tapping a box shows its details: open the sheet, then bring the box into the part of the screen the sheet leaves free
-  if (sel && isPhone() && document.body.classList.contains('no-panel')) { setPanel(true); if (typeof sel === 'string') bringIntoView(sel); }
+  // picking a box shows its details: open the panel (a sheet on a phone), then bring the box into the part of the screen it leaves free
+  if (sel && document.body.classList.contains('no-panel')) { setPanel(true, { keepView: true }); if (typeof sel === 'string') bringIntoView(sel); }
 }
 function applySelection() {
   const sel = state.selected;
@@ -1449,7 +1451,7 @@ function foldContext() {
   const long = desc.scrollHeight > desc.clientHeight + 1 || !!ctx.querySelector('.cx');
   ctx.classList.toggle('folded', !open);
   more.hidden = !long;
-  desc.inert = isPhone() && long && !open; // folded on a phone: links on the hidden lines can't be tabbed to; More opens it
+  desc.inert = long && !open; // folded: links on the hidden lines can't be tabbed to; More opens it
   more.textContent = open ? 'Less' : 'More';
   more.setAttribute('aria-expanded', String(open));
   more.onclick = () => { store.set('contextOpen', !open); foldContext(); };
@@ -2253,16 +2255,16 @@ window.addEventListener('keydown', () => { keyboardUser = true; }, true);
 window.addEventListener('pointerdown', () => { keyboardUser = false; }, true);
 const sheetRole = () => { if (isPhone()) { panel.setAttribute('role', 'dialog'); panel.setAttribute('aria-label', 'Details'); panel.tabIndex = -1; } else { panel.removeAttribute('role'); panel.removeAttribute('aria-label'); panel.removeAttribute('tabindex'); } };
 phoneQuery.addEventListener('change', sheetRole); sheetRole();
-const setPanel = (on) => {
+const setPanel = (on, { keepView = false } = {}) => {
   const was = !document.body.classList.contains('no-panel'); document.body.classList.toggle('no-panel', !on); $('#btn-panel').setAttribute('aria-expanded', String(on));
-  if (!isPhone()) store.set('panel', on);
-  if (was !== on && !isPhone()) fit(true);
+  if (!isPhone() && !keepView) store.set('panel', on);
+  if (was !== on && !isPhone() && !keepView) fit(true);
   if (was !== on && isPhone()) {
     if (on && keyboardUser) { sheetReturn = document.activeElement; panel.focus({ preventScroll: true }); }
     else if (!on && sheetReturn) { if (panel.contains(document.activeElement) || document.activeElement === document.body) sheetReturn.focus?.({ preventScroll: true }); sheetReturn = null; }
   }
 };
-document.body.classList.toggle('no-panel', isPhone() || !store.get('panel', true));
+document.body.classList.toggle('no-panel', isPhone() || !store.get('panel', false)); // closed until a box is picked: the map comes first
 $('#btn-panel').setAttribute('aria-expanded', String(!document.body.classList.contains('no-panel')));
 // the top bar can be one or two rows tall: everything under it follows its real height
 const headerEl = document.querySelector('header');
@@ -2377,7 +2379,7 @@ technicalFlag = !!store.get('technical', false);
 
 const init = readHash();
 state.container = init.v; state.selected = init.s;
-if (init.s && isPhone()) { document.body.classList.remove('no-panel'); $('#btn-panel').setAttribute('aria-expanded', 'true'); } // a shared link to a box opens its details
+if (init.s) { document.body.classList.remove('no-panel'); $('#btn-panel').setAttribute('aria-expanded', 'true'); } // a shared link to a box opens its details
 const fontsReady = document.fonts?.ready ? Promise.race([document.fonts.ready, new Promise((ok) => setTimeout(ok, 1500))]) : Promise.resolve();
 fontsReady.then(() => render({ after: () => { renderPanel(); emit('ready', {}); if (PLAN && window.FLOORPLAN_SERVER) showChangeResult(); } }));
 })();
