@@ -75,12 +75,12 @@ test('on a phone the details panel is a sheet at the bottom that starts closed a
 });
 
 test('tapping a box on a phone opens the details; going into or out of a box, or tapping empty space, closes them', () => {
-  assert.match(html, /if \(sel && isPhone\(\) && document\.body\.classList\.contains\('no-panel'\)\) \{ setPanel\(true\); if \(typeof sel === 'string'\) bringIntoView\(sel\); \}/);
+  assert.match(html, /if \(sel && document\.body\.classList\.contains\('no-panel'\)\) \{ setPanel\(true, \{ keepView: true \}\); if \(typeof sel === 'string'\) bringIntoView\(sel\); \}/);
   assert.match(html, /svg\.addEventListener\('click', closeSheet\);/);
   assert.match(html, /closeSheet\(\);\n  go\(item, \{ zoomFrom: item \}\);/);
   assert.match(html, /function up\(\) \{ if \(state\.container === 'root'\) return; closeSheet\(\);/);
   // the choice on a phone is not saved, so it can't close the side panel on a desktop that shares the storage
-  assert.match(html, /if \(!isPhone\(\)\) store\.set\('panel', on\);/);
+  assert.match(html, /if \(!isPhone\(\) && !keepView\) store\.set\('panel', on\);/);
 });
 
 test('the top bar height is measured, and everything under it follows', () => {
@@ -112,7 +112,7 @@ test('a phone starts with the details closed (so they never flash open), unless 
 });
 
 test('opening the details sheet on a phone does not re-fit the map', () => {
-  assert.match(html, /if \(was !== on && !isPhone\(\)\) fit\(true\);/);
+  assert.match(html, /if \(was !== on && !isPhone\(\) && !keepView\) fit\(true\);/);
 });
 
 test('Flows and Filters open inside the screen wherever the bar wrapped', () => {
@@ -131,15 +131,15 @@ test('the phone sheet is reachable and closable by keyboard: Escape closes it, c
   assert.match(html, /sheetReturn\.focus\?\./);
 });
 
-test('on a phone the description folds to one line, with a More / Less button that says whether it is open and is remembered', () => {
+test('the description folds to one line, with a More / Less button that says whether it is open and is remembered', () => {
   const css = media('(max-width: 700px)');
-  assert.match(css, /#context\.folded \.cd \{ display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; overflow: hidden; \}/);
-  assert.match(css, /#context \.ctx-more:not\(\[hidden\]\) \{ display: inline-flex; align-items: center; min-height: 44px;/);
-  assert.match(html, /\.ctx-more \{ display: none; \}/); // only phones show it
+  assert.match(html, /\n#context\.folded \.cd \{ display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; overflow: hidden; \}/); // on every screen
+  assert.match(css, /#context \.ctx-more:not\(\[hidden\]\) \{ display: inline-flex; align-items: center; min-height: 44px;/); // a bigger target on a phone
+  assert.match(html, /\.ctx-more \{ display: none; \}/); // shown only when there's more to read
   assert.match(html, /<button type="button" class="ctx-more" aria-controls="ctx-desc" hidden><\/button>/);
   assert.match(html, /more\.setAttribute\('aria-expanded', String\(open\)\);/);
   assert.match(html, /store\.set\('contextOpen', !open\)/);
-  assert.match(html, /desc\.inert = isPhone\(\) && long && !open;/); // the hidden lines can't be tabbed into
+  assert.match(html, /desc\.inert = long && !open;/); // the hidden lines can't be tabbed into
 });
 
 test('on a phone the warning about connecting an AI tool shows only while the ask bar is in use, and is read out when it appears', () => {
