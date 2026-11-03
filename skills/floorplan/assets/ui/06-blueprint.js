@@ -17,16 +17,23 @@
     /* planned, not built: a dashed outline on every card */
     html.blueprint .card:not(.connector)::after { content: ""; position: absolute; inset: 0; border-radius: inherit; border: 2.5px dashed rgba(var(--ink), .32); pointer-events: none; }
     .bp-pill { display: inline-flex; align-items: center; height: 20px; padding: 0 8px; margin-left: 8px; border-radius: 999px; font-size: 11px; font-weight: 500; letter-spacing: .02em; color: var(--text-2); border: 1px dashed rgba(var(--ink), .35); flex: none; }
+    /* one pill on screen: beside the title in the top bar, or in the heading over the map where the bar hides the title */
+    #context .bp-pill { display: none; }
+    @media (max-width: 999px), (max-width: 1279px) and (pointer: coarse) {
+      .brand .bp-pill { display: none; }
+      #context .bp-pill { display: inline-flex; }
+    }
     .bp-list { margin: 8px 0 0; padding-left: 18px; color: var(--text-2); font-size: 13px; line-height: 1.55; }
     .bp-list li + li { margin-top: 4px; }
   `;
   document.head.appendChild(style);
 
-  // a "Blueprint" pill beside the board's title, which is redrawn on every move
+  // a "Blueprint" pill beside the title in the top bar and in the heading over the map (redrawn on every move); CSS shows one
   const addPill = () => {
-    const k = document.querySelector('#context .k') || document.querySelector('.brand .bn-row'); // the overview has no heading over the map: the pill sits by the title
-    if (!k || k.querySelector('.bp-pill')) return;
-    k.insertAdjacentHTML('beforeend', '<span class="bp-pill" title="Planned, not built yet: every card is a part the system would need.">Blueprint</span>');
+    for (const k of document.querySelectorAll('.brand .bn-row, #context .k')) {
+      if (k.querySelector('.bp-pill')) continue;
+      k.insertAdjacentHTML('beforeend', '<span class="bp-pill" title="Planned, not built yet: every card is a part the system would need.">Blueprint</span>');
+    }
   };
   SC.on('render', addPill);
   SC.on('ready', addPill);

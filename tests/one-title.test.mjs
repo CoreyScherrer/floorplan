@@ -12,9 +12,16 @@ const assets = path.join(here, '..', 'skills', 'floorplan', 'assets');
 const html = fs.readFileSync(path.join(assets, 'viewer.html'), 'utf8');
 const bp = fs.readFileSync(path.join(assets, 'ui', '06-blueprint.js'), 'utf8');
 
-test('the overview draws no second heading over the map', () => {
-  assert.match(html, /if \(state\.container === 'root'\) \{ \$\('#context'\)\.innerHTML = ''; return; \}/);
-  assert.match(html, /#context:empty \{ display: none; \}/);
+test('the overview draws no second heading over the map where the top bar shows the title', () => {
+  const rc = html.slice(html.indexOf('function renderContext('), html.indexOf("if (state.container === 'q:answer')", html.indexOf('function renderContext(')));
+  assert.match(rc, /\$\('#context'\)\.classList\.toggle\('root', state\.container === 'root'\);/, 'set before any branch returns');
+  assert.match(html, /\n#context\.root \{ display: none; \}/);
+});
+
+test('where the top bar hides the title (narrow windows, phones) the overview heading shows instead', () => {
+  const narrow = html.slice(html.indexOf('@media (max-width: 999px), (max-width: 1279px) and (pointer: coarse) {'));
+  const block = narrow.slice(0, narrow.indexOf('\n}\n'));
+  assert.match(block, /\.brand #proj-name, \.brand #proj-sub \{ display: none; \}\n  #context\.root \{ display: block; \}/);
 });
 
 test('the top bar title is bigger and carries the summary under it', () => {
@@ -24,8 +31,9 @@ test('the top bar title is bigger and carries the summary under it', () => {
   assert.match(html, /sub\.hidden = false; sub\.textContent = text;/);
 });
 
-test('the Blueprint pill moves beside the title when there is no heading', () => {
-  assert.match(bp, /document\.querySelector\('#context \.k'\) \|\| document\.querySelector\('\.brand \.bn-row'\)/);
+test('one Blueprint pill on screen: in the top bar on a wide screen, in the map heading where the bar hides the title', () => {
+  assert.match(bp, /document\.querySelectorAll\('\.brand \.bn-row, #context \.k'\)/);
+  assert.match(bp, /#context \.bp-pill \{ display: none; \}\n    @media \(max-width: 999px\), \(max-width: 1279px\) and \(pointer: coarse\) \{\n      \.brand \.bp-pill \{ display: none; \}\n      #context \.bp-pill \{ display: inline-flex; \}/);
 });
 
 test('a map opens at 100% from its left edge; a phone fits it', () => {

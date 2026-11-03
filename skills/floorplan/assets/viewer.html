@@ -120,6 +120,7 @@ header > * { pointer-events: auto; }
 #proj-sub:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; border-radius: 4px; }
 #proj-sub.open { position: absolute; top: calc(100% + 6px); left: -8px; z-index: 12; width: min(520px, 80vw); max-width: none; padding: 12px 14px; border-radius: 14px; background: var(--surface); box-shadow: var(--shadow-lift); color: var(--text-2); font-size: 13.5px; line-height: 1.55; white-space: normal; }
 #context:empty { display: none; }
+#context.root { display: none; }
 #crumbs { display: flex; align-items: center; min-width: 0; overflow: hidden; }
 #crumbs .sep { color: var(--text-4); padding: 0 1px; }
 #crumbs button { background: none; border: 0; padding: 6px 10px; border-radius: 999px; cursor: pointer; color: var(--text-3); white-space: nowrap; max-width: 220px; overflow: hidden; text-overflow: ellipsis; transition: background .2s var(--ease), color .2s var(--ease); }
@@ -516,6 +517,7 @@ html.wk svg.dim .node:not(.hl) foreignObject { opacity: .28; }
   #search-btn .st { overflow: hidden; text-overflow: ellipsis; }
   .hr { flex: 0 0 auto; flex-wrap: wrap; }
   .brand #proj-name, .brand #proj-sub { display: none; }
+  #context.root { display: block; }
   header .rel { position: static; } /* Flows and Filters open under the bar, inside the screen, wherever the bar wrapped */
   #flowmenu, #legend { position: fixed; top: calc(var(--hh, 56px) + 4px); left: 8px; right: auto; width: min(320px, calc(100% - 16px)); max-height: 60vh; overflow: auto; }
   .hr .btn { position: relative; padding: 0; justify-content: center; }
@@ -1528,12 +1530,13 @@ function markSelection() {
 
 // ======================= chrome: context, crumbs, legend =======================
 function renderContext() {
+  // the overview's name and summary are the title in the top bar, so on a wide screen its heading over the map is hidden;
+  // where the bar hides them (narrow windows, phones) the heading shows instead
+  $('#context').classList.toggle('root', state.container === 'root');
   if (state.container === 'q:answer') {
     $('#context').innerHTML = `<div class="k"><span class="ico" style="--c:var(--on)">${icon(state.answer.icon || 'spark')}</span>${h(state.answer.kind || 'Answer')} · ${plural(state.answer.items.length, 'card')}</div><h1>${h(state.answer.title)}</h1><p>${h(state.answer.question)}</p>`;
     return;
   }
-  // the overview's name and summary are already the title in the top bar: no second heading over the map
-  if (state.container === 'root') { $('#context').innerHTML = ''; return; }
   const i = info(state.container);
   const kind = state.container === 'root' ? 'Overview' : i.type === 'node' ? i.kind.charAt(0).toUpperCase() + i.kind.slice(1) : i.type === 'dir' ? 'Folder' : i.type === 'file' ? 'File' : i.type;
   const badge = state.container === 'root' ? '' : `<span class="ico" style="--c:${colorOf(i)}">${icon(iconKey(i))}</span>`;
