@@ -110,6 +110,17 @@ header > * { pointer-events: auto; }
 .hr { display: flex; align-items: center; justify-content: flex-end; gap: 4px; }
 .brand { display: flex; align-items: center; gap: 10px; font-weight: 600; letter-spacing: -.01em; white-space: nowrap; padding-right: 6px; }
 .mark { height: 22px; width: auto; display: block; flex: none; }
+/* the map's one title: its name, and under it the one-line summary (click for all of it) */
+.bn { position: relative; display: flex; flex-direction: column; min-width: 0; }
+.bn-row { display: flex; align-items: center; min-width: 0; }
+#proj-name { font-size: 17px; letter-spacing: -.02em; }
+#proj-sub { display: block; max-width: min(460px, 34vw); margin: 1px 0 0; padding: 0; border: 0; background: none; font: inherit; font-size: 12.5px; font-weight: 400; letter-spacing: 0; color: var(--text-3); text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+#proj-sub[hidden] { display: none; }
+#proj-sub:hover { color: var(--text-2); }
+#proj-sub:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; border-radius: 4px; }
+#proj-sub.open { position: absolute; top: calc(100% + 6px); left: -8px; z-index: 12; width: min(520px, 80vw); max-width: none; padding: 12px 14px; border-radius: 14px; background: var(--surface); box-shadow: var(--shadow-lift); color: var(--text-2); font-size: 13.5px; line-height: 1.55; white-space: normal; }
+#context:empty { display: none; }
+#context.root { display: none; }
 #crumbs { display: flex; align-items: center; min-width: 0; overflow: hidden; }
 #crumbs .sep { color: var(--text-4); padding: 0 1px; }
 #crumbs button { background: none; border: 0; padding: 6px 10px; border-radius: 999px; cursor: pointer; color: var(--text-3); white-space: nowrap; max-width: 220px; overflow: hidden; text-overflow: ellipsis; transition: background .2s var(--ease), color .2s var(--ease); }
@@ -505,7 +516,8 @@ html.wk svg.dim .node:not(.hl) foreignObject { opacity: .28; }
   #search-btn { width: 100%; min-width: 44px; }
   #search-btn .st { overflow: hidden; text-overflow: ellipsis; }
   .hr { flex: 0 0 auto; flex-wrap: wrap; }
-  .brand #proj-name { display: none; }
+  .brand #proj-name, .brand #proj-sub { display: none; }
+  #context.root { display: block; }
   header .rel { position: static; } /* Flows and Filters open under the bar, inside the screen, wherever the bar wrapped */
   #flowmenu, #legend { position: fixed; top: calc(var(--hh, 56px) + 4px); left: 8px; right: auto; width: min(320px, calc(100% - 16px)); max-height: 60vh; overflow: auto; }
   .hr .btn { position: relative; padding: 0; justify-content: center; }
@@ -596,7 +608,7 @@ html.wk svg.dim .node:not(.hl) foreignObject { opacity: .28; }
 </div>
 <header>
   <div class="hl">
-    <div class="brand"><img class="mark" src="__FLOORPLAN_LOGO__" alt="Floorplan" title="Floorplan"><span id="proj-name"></span></div>
+    <div class="brand"><img class="mark" src="__FLOORPLAN_LOGO__" alt="Floorplan" title="Floorplan"><div class="bn"><div class="bn-row"><span id="proj-name"></span></div><button type="button" id="proj-sub" aria-label="Map summary" aria-expanded="false" hidden></button></div></div>
     <button class="btn icon" id="btn-up" title="Up one level (Backspace)" aria-label="Up one level" hidden><svg class="i" viewBox="0 0 24 24"><path d="M19 12H5M11 18l-6-6 6-6"/></svg></button>
     <nav id="crumbs"></nav>
   </div>
@@ -1080,7 +1092,7 @@ async function render(opts = {}) {
   renderContext(); renderCrumbs(); renderLegend(view);
   $('#empty').hidden = view.visible.length > 0;
   $('#empty').textContent = view.visible.length ? '' : 'Nothing inside.';
-  if (opts.keepTransform) applyTransform(); else fit(false);
+  if (opts.keepTransform) applyTransform(); else home(false);
   applySelection();
   if (opts.after) opts.after();
 }
@@ -1131,6 +1143,7 @@ function draw(view, res) {
     g.addEventListener('mouseleave', hideTip);
     state.chipEls.set(c.id, g);
   }
+  state.boxes = res.children;
   buildLabels(res.children, view.connectors);
 }
 
@@ -1328,6 +1341,19 @@ function freeArea() {
   const bottom = open && sheet ? $('#panel').offsetHeight + 24 : $('#ask').offsetHeight + 36;
   return { x: 16, y: top, w: Math.max(200, r.width - panelW - 32), h: Math.max(140, r.height - top - bottom) };
 }
+/** The view a map opens on: 100%, from its left edge, under the top bar. A phone fits the whole map instead. */
+function home(animate) {
+  if (isPhone()) return fit(animate);
+  const b = state.bounds; if (!b) return;
+  const a = freeArea();
+  // vertically, place the boxes that land on screen at the left edge, not the whole map's top
+  // (a tall column of outside services far to the right would otherwise leave the screen empty)
+  const seen = (state.boxes || []).filter((c) => c.x < b.x + a.w - 8);
+  const y0 = seen.length ? Math.min(...seen.map((c) => c.y)) : b.y;
+  const y1 = seen.length ? Math.max(...seen.map((c) => c.y + c.height)) : b.y + b.h;
+  const y = y1 - y0 <= a.h - 24 ? a.y + (a.h - (y1 - y0)) / 2 - y0 : a.y + 12 - y0;
+  setT({ k: 1, x: a.x + 8 - b.x, y }, animate);
+}
 function fit(animate) {
   const b = state.bounds; if (!b) return;
   const a = freeArea();
@@ -1399,7 +1425,7 @@ let lastWidth = innerWidth;
 window.addEventListener('resize', () => {
   const heightOnly = innerWidth === lastWidth; lastWidth = innerWidth;
   if (matchMedia('(pointer: coarse)').matches && (heightOnly || drag || pinch)) return;
-  fit(false);
+  if (isPhone()) fit(false); else applyTransform(); // a computer keeps where you are; a phone refits
 });
 $('#z-in').onclick = () => zoomBy(1.25);
 $('#z-out').onclick = () => zoomBy(0.8);
@@ -1504,6 +1530,9 @@ function markSelection() {
 
 // ======================= chrome: context, crumbs, legend =======================
 function renderContext() {
+  // the overview's name and summary are the title in the top bar, so on a wide screen its heading over the map is hidden;
+  // where the bar hides them (narrow windows, phones) the heading shows instead
+  $('#context').classList.toggle('root', state.container === 'root');
   if (state.container === 'q:answer') {
     $('#context').innerHTML = `<div class="k"><span class="ico" style="--c:var(--on)">${icon(state.answer.icon || 'spark')}</span>${h(state.answer.kind || 'Answer')} · ${plural(state.answer.items.length, 'card')}</div><h1>${h(state.answer.title)}</h1><p>${h(state.answer.question)}</p>`;
     return;
@@ -2045,7 +2074,7 @@ function sheetShell(question, body) {
     ${askState.last && state.container !== 'q:answer' ? '<button class="btn soft" data-act="board">Show answer board</button>' : ''}
     ${state.container === 'q:answer' ? '<button class="btn soft" data-act="map">Back to map</button>' : ''}
     <button class="btn icon" data-act="close" title="Close">${iconI('x')}</button></div><div class="sb">${body}</div>`;
-  sheet.querySelector('[data-act="close"]').onclick = () => { if (askState.busy) cancelAsk(); sheet.hidden = true; if (state.container === 'q:answer') go('root'); else fit(true); };
+  sheet.querySelector('[data-act="close"]').onclick = () => { if (askState.busy) cancelAsk(); sheet.hidden = true; if (state.container === 'q:answer') go('root'); else home(true); };
   sheet.querySelector('[data-act="map"]')?.addEventListener('click', () => go('root'));
   sheet.querySelector('[data-act="board"]')?.addEventListener('click', () => go('q:answer'));
   sheet.querySelectorAll('[data-ref]').forEach((r) => r.onclick = () => {
@@ -2257,6 +2286,16 @@ if (!EXPORTED) loadCustomFlows();
 
 // ======================= boot =======================
 $('#proj-name').textContent = G.project.name;
+{
+  const sub = $('#proj-sub'), text = (G.project.summary || '').trim();
+  if (text) {
+    sub.hidden = false; sub.textContent = text; sub.title = text; sub.setAttribute('aria-label', `Summary: ${text}`);
+    const close = () => { sub.classList.remove('open'); sub.setAttribute('aria-expanded', 'false'); };
+    sub.onclick = (ev) => { ev.stopPropagation(); const on = !sub.classList.contains('open'); sub.classList.toggle('open', on); sub.setAttribute('aria-expanded', String(on)); };
+    window.addEventListener('pointerdown', (ev) => { if (!sub.contains(ev.target)) close(); }, true);
+    window.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') close(); });
+  }
+}
 if (EXPORTED) {
   document.body.classList.add('exported');
   const at = new Date(EXPORTED.at);
@@ -2330,7 +2369,7 @@ phoneQuery.addEventListener('change', sheetRole); sheetRole();
 const setPanel = (on, { keepView = false } = {}) => {
   const was = !document.body.classList.contains('no-panel'); document.body.classList.toggle('no-panel', !on); $('#btn-panel').setAttribute('aria-expanded', String(on));
   if (!isPhone() && !keepView) store.set('panel', on);
-  if (was !== on && !isPhone() && !keepView) fit(true);
+  // the map stays where it is when the panel opens or closes; F or the zoom % fits it
   if (was !== on && isPhone()) {
     if (on && keyboardUser) { sheetReturn = document.activeElement; panel.focus({ preventScroll: true }); }
     else if (!on && sheetReturn) { if (panel.contains(document.activeElement) || document.activeElement === document.body) sheetReturn.focus?.({ preventScroll: true }); sheetReturn = null; }

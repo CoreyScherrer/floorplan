@@ -112,7 +112,7 @@ test('a phone starts with the details closed (so they never flash open), unless 
 });
 
 test('opening the details sheet on a phone does not re-fit the map', () => {
-  assert.match(html, /if \(was !== on && !isPhone\(\) && !keepView\) fit\(true\);/);
+  assert.doesNotMatch(html.match(/const setPanel = [\s\S]*?\n\};/)[0], /fit\(/); // the panel never refits the map, on any screen
 });
 
 test('Flows and Filters open inside the screen wherever the bar wrapped', () => {

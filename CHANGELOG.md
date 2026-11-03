@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- **One title, more map:** the project name now appears once, in the header, at 17px. Its summary sits on one line under it (click to read it all), and the second, larger heading over the map is gone at the top level.
+- **Opens at 100%, left-aligned:** on a laptop the map opens at actual size from its left edge instead of shrunk to fit. **F** or the zoom button still fits it to the screen. Phones still open fitted.
+
 - Box titles never draw under 11px on screen. Between 42% and 73% zoom, where the boxes keep their own titles, the title grows as the map shrinks.
 
 - Readable names when zoomed out: below 42% zoom, box names move to a screen-space layer at 12px. A name that would overlap another tries above, then below, its box. If it still has no free spot it is left off, and inside parts win over outside services. Zoom in and the boxes' own titles take over.
