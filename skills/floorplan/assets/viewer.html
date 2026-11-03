@@ -176,13 +176,14 @@ body.in-flow #context { opacity: 0; }
 .head { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .ico { width: 30px; height: 30px; border-radius: 10px; display: grid; place-items: center; flex: none; color: var(--c); background: color-mix(in srgb, var(--c) 13%, transparent); }
 .ico svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.title { font-size: 15px; font-weight: 600; letter-spacing: -.015em; line-height: 1.3; overflow: hidden; min-width: 0; flex: 1; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow-wrap: anywhere; }
+/* never under 11px on screen: between 42% and 73% zoom the title grows as the map shrinks (--k is the zoom) */
+.title { font-size: max(15px, calc(11px / var(--k, 1))); font-weight: 600; letter-spacing: -.015em; line-height: 1.3; overflow: hidden; min-width: 0; flex: 1; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow-wrap: anywhere; }
 .card > .title { flex: none; } /* an endpoint's name, on its own row under the method and path */
 /* footer: size on the left, recent-work pill on the right, pinned to the bottom of the card */
 .foot { margin-top: auto; display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 23px; }
 .foot .meta { align-self: center; }
 svg.lod-low .foot .meta { visibility: hidden; }
-.title.mono { font-family: var(--mono); font-size: 13px; font-weight: 500; }
+.title.mono { font-family: var(--mono); font-size: max(13px, calc(11px / var(--k, 1))); font-weight: 500; }
 .meta { font-size: 11.5px; color: var(--text-3); white-space: nowrap; font-variant-numeric: tabular-nums; background: rgba(var(--ink), .05); border-radius: 999px; padding: 2px 8px; }
 .desc { color: var(--text-2); font-size: 13px; line-height: 19px; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: var(--lines, 2); overflow: hidden; max-height: calc(var(--lines, 2) * 19px); }
 .desc[style*="--lines:1"] { -webkit-line-clamp: 1; } .desc[style*="--lines:2"] { -webkit-line-clamp: 2; } .desc[style*="--lines:3"] { -webkit-line-clamp: 3; }
@@ -1255,6 +1256,7 @@ window.addEventListener('blur', closeMenu);
 function applyTransform() {
   const { x, y, k } = state.t;
   vp.style.transform = `translate(${x}px,${y}px) scale(${k})`;
+  svg.style.setProperty('--k', k.toFixed(3));
   svg.classList.toggle('lod-low', k < 0.42);
   svg.classList.toggle('lod-mid', k >= 0.42 && k < 0.65);
   const pct = Math.round(k * 100) + '%', zf = $('#z-fit');

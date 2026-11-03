@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Box titles never draw under 11px on screen. Between 42% and 73% zoom, where the boxes keep their own titles, the title grows as the map shrinks.
+
 - Readable names when zoomed out: below 42% zoom, box names move to a screen-space layer at 12px. A name that would overlap another tries above, then below, its box. If it still has no free spot it is left off, and inside parts win over outside services. Zoom in and the boxes' own titles take over.
 - Zoom controls moved to the bottom right, clear of the details panel, with 40px buttons. The fit button now shows the zoom level (for example "20%"); click it to fit the map.
 
