@@ -88,3 +88,9 @@ test('zoom controls: bottom right, clear of the panel, 40px, and the fit button 
   assert.match(html, /<button id="z-fit" title="Fit to screen \(F\)" aria-label="Zoom 100%\. Fit to screen">100%<\/button>/);
   assert.match(fn('applyTransform'), /zf\.textContent = pct; zf\.setAttribute\('aria-label', `Zoom \$\{pct\}\. Fit to screen`\);/);
 });
+
+test('between 42% and 73% zoom a box title grows so it never draws under 11px on screen', () => {
+  assert.match(html, /\.title \{ font-size: max\(15px, calc\(11px \/ var\(--k, 1\)\)\);/);
+  assert.match(html, /\.title\.mono \{[^}]*font-size: max\(13px, calc\(11px \/ var\(--k, 1\)\)\);/);
+  assert.match(fn('applyTransform'), /svg\.style\.setProperty\('--k', k\.toFixed\(3\)\);/);
+});
