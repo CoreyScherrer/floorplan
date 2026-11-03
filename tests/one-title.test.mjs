@@ -26,7 +26,7 @@ test('where the top bar hides the title (narrow windows, phones) the overview he
 
 test('the top bar title is bigger and carries the summary under it', () => {
   assert.match(html, /<div class="bn"><div class="bn-row"><span id="proj-name"><\/span><\/div><button type="button" id="proj-sub"/);
-  assert.match(html, /#proj-name \{ font-size: 17px;/);
+  assert.match(html, /#proj-name \{[^}]*font-size: 17px;/);
   assert.match(html, /#proj-sub \{[^}]*white-space: nowrap; overflow: hidden; text-overflow: ellipsis;/);
   assert.match(html, /sub\.hidden = false; sub\.textContent = text;/);
 });
@@ -36,11 +36,25 @@ test('one Blueprint pill on screen: in the top bar on a wide screen, in the map 
   assert.match(bp, /#context \.bp-pill \{ display: none; \}\n    @media \(max-width: 999px\), \(max-width: 1279px\) and \(pointer: coarse\) \{\n      \.brand \.bp-pill \{ display: none; \}\n      #context \.bp-pill \{ display: inline-flex; \}/);
 });
 
-test('a map opens at 100% from its left edge; a phone fits it', () => {
+test('a map opens at 50% from its left edge; a phone fits it', () => {
   const home = html.match(/function home\(animate\) \{[\s\S]*?\n\}/)[0];
+  assert.match(html, /const HOME_K = 0\.5;/);
   assert.match(home, /if \(isPhone\(\)\) return fit\(animate\);/);
-  assert.match(home, /const seen = \(state\.boxes \|\| \[\]\)\.filter\(\(c\) => c\.x < b\.x \+ a\.w - 8\);/);
-  assert.match(home, /setT\(\{ k: 1, x: a\.x \+ 8 - b\.x, y \}, animate\);/);
+  assert.match(home, /const seen = \(state\.boxes \|\| \[\]\)\.filter\(\(c\) => c\.x < b\.x \+ \(a\.w - 8\) \/ k\);/);
+  assert.match(home, /setT\(\{ k, x: a\.x \+ 8 - b\.x \* k, y \}, animate\);/);
   assert.match(html, /if \(opts\.keepTransform\) applyTransform\(\); else home\(false\);/);
   assert.match(html, /\$\('#z-fit'\)\.onclick = \(\) => fit\(true\);/);
+});
+
+test('the title and summary shrink with the left of the bar, so they never run under the search box', () => {
+  assert.match(html, /\.brand \{ display: flex; align-items: center; gap: 10px; min-width: 0;/);
+  assert.match(html, /#proj-name \{ min-width: 0; overflow: hidden; text-overflow: ellipsis;/);
+  assert.match(html, /#proj-sub \{ display: block; max-width: min\(460px, 100%\);/);
+});
+
+test('on the overview the breadcrumb is hidden; elsewhere it keeps its room and the title gives way first', () => {
+  assert.match(html, /c\.hidden = state\.container === 'root';/);
+  assert.match(html, /#crumbs\[hidden\] \{ display: none; \}/);
+  assert.match(html, /\.hl \.brand \{ flex: 0 3 auto; \}\n\.hl #crumbs \{ flex: 0 1 auto; \}/);
+  assert.match(html, /@container \(max-width: 470px\) \{ \.bn-row \.xtag \{ display: none; \} \}/);
 });
