@@ -243,8 +243,19 @@ svg.dim .edge:not(.hl) { opacity: .1; }
 .flowlink { fill: none; stroke: var(--on); stroke-opacity: .7; stroke-width: 2; stroke-dasharray: 5 7; animation: flow 1.1s linear infinite; }
 
 /* ---------- floating chrome ---------- */
-#zoom { position: absolute; left: 16px; bottom: 16px; display: flex; padding: 4px; gap: 2px; border-radius: 999px; }
-#zoom button { width: 34px; height: 34px; border: 0; background: none; color: var(--text-2); border-radius: 999px; cursor: pointer; display: grid; place-items: center; transition: background .2s var(--ease), color .2s var(--ease); }
+/* bottom right, clear of the details panel: it slides left when the panel opens */
+#zoom { position: absolute; right: calc(var(--pw) + 16px); bottom: 16px; z-index: 4; display: flex; align-items: center; padding: 4px; gap: 2px; border-radius: 999px; transition: right .45s var(--ease); }
+#zoom button { width: 40px; height: 40px; border: 0; background: none; color: var(--text-2); border-radius: 999px; cursor: pointer; display: grid; place-items: center; transition: background .2s var(--ease), color .2s var(--ease); }
+#zoom #z-fit { width: auto; min-width: 56px; padding: 0 8px; font: inherit; font-size: 12.5px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--text); }
+/* Names drawn at a fixed screen size over the map when it is zoomed too far out to read the
+   boxes' own titles. Where two would overlap, the more important box keeps its name. */
+#labels { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 1; }
+#labels[hidden] { display: none; }
+.flab { position: absolute; left: 0; top: 0; max-width: 128px; padding: 2px 7px; border-radius: 7px; background: color-mix(in srgb, var(--surface) 88%, transparent); color: var(--text); font-size: 12px; font-weight: 600; line-height: 1.3; letter-spacing: -.01em; text-align: center; overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; box-shadow: 0 1px 2px rgba(var(--ink), .08); }
+.flab.ext { font-weight: 500; color: var(--text-2); }
+.flab.off { visibility: hidden; }
+.flab.faint { opacity: .35; }
+svg.lod-labels .node .title, svg.lod-labels .card.connector .lbl { visibility: hidden; }
 #zoom button:hover { background: rgba(var(--ink), .08); color: var(--text); }
 .menu { position: absolute; z-index: 30; min-width: 230px; padding: 6px; border-radius: 18px; display: none; transform-origin: top right; }
 .menu.open { display: block; animation: menuIn .22s var(--ease); }
@@ -559,10 +570,11 @@ html.wk svg.dim .node:not(.hl) foreignObject { opacity: .28; }
 <script>if (matchMedia('(max-width: 700px)').matches && !/[#&]s=/.test(location.hash)) document.body.classList.add('no-panel'); // a phone starts with the details closed, so the panel doesn't flash open and shut</script>
 <div id="stage">
   <svg id="svg" xmlns="http://www.w3.org/2000/svg"><g id="viewport"></g></svg>
+  <div id="labels" aria-hidden="true" hidden></div>
   <div id="context"></div>
   <div id="zoom" class="glass">
     <button id="z-out" title="Zoom out (−)"><svg class="i" viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button>
-    <button id="z-fit" title="Fit to screen (F)"><svg class="i" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+    <button id="z-fit" title="Fit to screen (F)" aria-label="Zoom 100%. Fit to screen">100%</button>
     <button id="z-in" title="Zoom in (+)"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
   </div>
   <div id="flowbar" class="glass" hidden></div>
@@ -1118,6 +1130,7 @@ function draw(view, res) {
     g.addEventListener('mouseleave', hideTip);
     state.chipEls.set(c.id, g);
   }
+  buildLabels(res.children, view.connectors);
 }
 
 /** Brackets over the three columns of a view that has outside connections: what uses this part (left),
@@ -1244,6 +1257,59 @@ function applyTransform() {
   vp.style.transform = `translate(${x}px,${y}px) scale(${k})`;
   svg.classList.toggle('lod-low', k < 0.42);
   svg.classList.toggle('lod-mid', k >= 0.42 && k < 0.65);
+  const pct = Math.round(k * 100) + '%', zf = $('#z-fit');
+  if (zf && zf.textContent !== pct) { zf.textContent = pct; zf.setAttribute('aria-label', `Zoom ${pct}. Fit to screen`); }
+  placeLabels();
+}
+
+// ======================= readable names when zoomed out =======================
+// Below LABEL_K a box's own title draws under ~9px, so names move to #labels at a fixed 12px.
+var LABEL_K = 0.42, LABEL_GAP = 4; // var, not const: applyTransform can run before this line
+var labelsEl = document.getElementById('labels');
+/** One label per box of the current view, measured once; called after each render. */
+function buildLabels(children, connectors) {
+  labelsEl.textContent = '';
+  state.labels = [];
+  for (const c of children || []) {
+    const conn = c.id.startsWith('x:') ? (connectors || []).find((x) => x.id === c.id) : null;
+    const i = info(conn ? conn.entity : c.id);
+    const name = i?.name || '';
+    if (!name) continue;
+    const ext = !!conn || i.kind === 'external';
+    const elx = document.createElement('div');
+    elx.className = 'flab' + (ext ? ' ext' : '');
+    elx.textContent = name;
+    labelsEl.appendChild(elx);
+    state.labels.push({ id: c.id, c, el: elx, ext, w: 0, h: 0, area: c.width * c.height });
+  }
+  // the more important box wins a collision: inside parts before outside services, then the bigger box
+  state.labels.sort((a, b) => (a.ext - b.ext) || (b.area - a.area));
+  labelsEl.hidden = false;
+  for (const l of state.labels) { l.w = l.el.offsetWidth; l.h = l.el.offsetHeight; }
+  placeLabels();
+}
+function placeLabels() {
+  if (!labelsEl) return;
+  const on = !!state.labels?.length && state.t.k < LABEL_K;
+  svg.classList.toggle('lod-labels', on);
+  labelsEl.hidden = !on;
+  if (!on) return;
+  const { x, y, k } = state.t, W = labelsEl.clientWidth, H = labelsEl.clientHeight;
+  const dim = svg.classList.contains('dim');
+  const placed = [];
+  for (const l of state.labels) {
+    const cx = x + (l.c.x + l.c.width / 2) * k, top = y + l.c.y * k, bot = y + (l.c.y + l.c.height) * k;
+    // on the box, else just above it, else just below it; a name with no free spot is left off
+    const r = [(top + bot) / 2 - l.h / 2, top - l.h - 2, bot + 2]
+      .map((y0) => ({ x0: cx - l.w / 2, y0, x1: cx + l.w / 2, y1: y0 + l.h }))
+      .find((r) => r.x1 > 0 && r.x0 < W && r.y1 > 0 && r.y0 < H
+        && !placed.some((p) => r.x0 < p.x1 + LABEL_GAP && r.x1 + LABEL_GAP > p.x0 && r.y0 < p.y1 + LABEL_GAP && r.y1 + LABEL_GAP > p.y0));
+    l.el.classList.toggle('off', !r);
+    if (!r) continue;
+    placed.push(r);
+    l.el.style.transform = `translate(${Math.round(r.x0)}px,${Math.round(r.y0)}px)`;
+    l.el.classList.toggle('faint', dim && !state.chipEls.get(l.id)?.classList.contains('hl'));
+  }
 }
 const stageRect = () => svg.getBoundingClientRect();
 function setT(t, animate) {
@@ -1413,6 +1479,10 @@ function select(sel) {
   if (sel && document.body.classList.contains('no-panel')) { setPanel(true, { keepView: true }); if (typeof sel === 'string') bringIntoView(sel); }
 }
 function applySelection() {
+  markSelection();
+  if (state.labels) placeLabels(); // names of boxes outside the selection fade with them
+}
+function markSelection() {
   const sel = state.selected;
   svg.classList.remove('dim');
   for (const g of state.chipEls?.values() || []) g.classList.remove('sel', 'hl');
