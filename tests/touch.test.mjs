@@ -25,7 +25,7 @@ test('a drag follows only the finger that started it, ends when the browser canc
   assert.match(html, /if \(!drag \|\| ev\.pointerId !== drag\.id\) return;/);
   assert.match(html, /window\.addEventListener\('pointercancel', endDrag\)/);
   assert.match(html, /window\.addEventListener\('pointercancel', liftFinger\)/);
-  assert.match(html, /if \(matchMedia\('\(pointer: coarse\)'\)\.matches && \(heightOnly \|\| drag \|\| pinch\)\) return;\n  fit\(false\);/);
+  assert.match(html, /if \(matchMedia\('\(pointer: coarse\)'\)\.matches && \(heightOnly \|\| drag \|\| pinch\)\) return;\n  if \(isPhone\(\)\) fit\(false\); else applyTransform\(\);/);
 });
 
 test('a third finger is ignored, and the click that ends a drag is swallowed once and cleared at the next touch, so the next tap still works', () => {

@@ -24,7 +24,7 @@
 
   // a "Blueprint" pill beside the board's title, which is redrawn on every move
   const addPill = () => {
-    const k = document.querySelector('#context .k');
+    const k = document.querySelector('#context .k') || document.querySelector('.brand .bn-row'); // the overview has no heading over the map: the pill sits by the title
     if (!k || k.querySelector('.bp-pill')) return;
     k.insertAdjacentHTML('beforeend', '<span class="bp-pill" title="Planned, not built yet: every card is a part the system would need.">Blueprint</span>');
   };
