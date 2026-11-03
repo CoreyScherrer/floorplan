@@ -1,5 +1,5 @@
-// Zoomed out, a box's own title draws at 4-8px. Names then move to a screen-space layer at 12px,
-// one per box, and a name that would land on another is moved above or below its box, or left off.
+// Zoomed out, a box's own title draws at 4-8px. Names then move to a screen-space layer, one per box,
+// and each stays inside its own box: 12px when it fits, down to 9px and three lines, else left off.
 // The zoom controls sit bottom right, clear of the details panel, with the zoom level on the fit button.
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -20,14 +20,14 @@ function fn(name) {
 }
 
 const cls = () => { const s = new Set(); return { add: (c) => s.add(c), remove: (c) => s.delete(c), contains: (c) => s.has(c), toggle: (c, on) => (on ? s.add(c) : s.delete(c)), s }; };
-const label = (id, x, y, ext = false, w = 100, h = 18) => ({ id, ext, w, h, c: { x, y, width: 300, height: 150 }, el: { classList: cls(), style: {} } });
+const label = (id, x, y, ext = false, w = 100, width = 300, height = 150) => ({ id, ext, w, c: { x, y, width, height }, el: { classList: cls(), style: {} } });
 
 function run(labels, k, W = 1440, H = 800) {
   const ctx = {
     state: { labels, t: { x: 0, y: 0, k }, chipEls: new Map() },
     svg: { classList: cls() },
     labelsEl: { hidden: true, clientWidth: W, clientHeight: H },
-    LABEL_K: 0.42, LABEL_GAP: 4,
+    LABEL_K: 0.42, LABEL_PAD: 2, LABEL_FS: [12, 11, 10, 9], LABEL_LINES: 3,
   };
   vm.runInNewContext(`${fn('placeLabels')}; placeLabels();`, ctx);
   return ctx;
@@ -41,6 +41,7 @@ test('zoomed out, names show at screen size and the boxes hide their own titles'
   assert.ok(ctx.svg.classList.contains('lod-labels'));
   assert.ok(ls.every(shown));
   assert.match(html, /\.flab \{[^}]*font-size: 12px;/);
+  assert.match(html, /\.flab-t \{[^}]*box-decoration-break: clone;/);
   assert.match(html, /svg\.lod-labels \.node \.title, svg\.lod-labels \.card\.connector \.lbl \{ visibility: hidden; \}/);
 });
 
@@ -50,24 +51,39 @@ test('zoomed in far enough to read the boxes, the layer steps aside', () => {
   assert.equal(ctx.svg.classList.contains('lod-labels'), false);
 });
 
-test('a name that would overlap moves above its box before it is left off', () => {
-  // two boxes on the same row, 60px apart on screen: the second name cannot sit on its box
-  const a = label('n:a', 0, 1000), b = label('n:b', 300, 1000);
-  run([a, b], 0.2);
-  assert.ok(shown(a) && shown(b));
-  assert.notEqual(a.el.style.transform, b.el.style.transform);
-  const yOf = (l) => Number(/,(-?\d+)px\)/.exec(l.el.style.transform)[1]);
-  assert.ok(yOf(b) < yOf(a), 'moved above');
-});
+const px = (v) => parseFloat(v);
+const pos = (l) => /translate\((-?\d+)px,(-?\d+)px\)/.exec(l.el.style.transform).slice(1).map(Number);
 
-test('with no free spot the less important name is left off, never drawn on top', () => {
-  const ls = [label('n:a', 0, 1000), label('n:b', 10, 1000), label('n:c', 20, 1000), label('n:d', 30, 1000)];
+test('a name never reaches past its box', () => {
+  // 300x150 box at 20%: 60x30 on screen
+  const ls = [label('n:a', 0, 1000, false, 170), label('n:b', 300, 1000, false, 60), label('n:c', 600, 1000, true, 300)];
   run(ls, 0.2);
-  assert.deepEqual(ls.map(shown), [true, true, true, false]);
+  assert.ok(ls.some(shown));
+  for (const l of ls.filter(shown)) {
+    const [x, y] = pos(l), bx = l.c.x * 0.2, by = 1000 * 0.2;
+    assert.ok(x >= bx && x + px(l.el.style.width) <= bx + 60, `${l.id} inside horizontally`);
+    assert.ok(y >= by && y + px(l.el.style.maxHeight) <= by + 30, `${l.id} inside vertically`);
+  }
 });
 
-test('inside parts win collisions over outside services', () => {
-  assert.match(html, /state\.labels\.sort\(\(a, b\) => \(a\.ext - b\.ext\) \|\| \(b\.area - a\.area\)\);/);
+test('a short name keeps 12px; a long one steps down and wraps to stay inside', () => {
+  const short = label('n:a', 0, 0, false, 40), long = label('n:b', 2000, 0, false, 170);
+  run([short, long], 0.4); // 120x60 on screen
+  assert.equal(short.el.style.fontSize, '12px');
+  assert.equal(short.el.style.webkitLineClamp, '1');
+  assert.ok(px(long.el.style.fontSize) <= 12 && Number(long.el.style.webkitLineClamp) >= 2);
+});
+
+test('a box too small for one line of text shows no name', () => {
+  const tiny = label('n:a', 0, 0, false, 80, 100, 40);
+  run([tiny], 0.2); // 20x8 on screen
+  assert.equal(shown(tiny), false);
+});
+
+test('neighbouring boxes keep their own names: none is pushed off by another', () => {
+  const ls = [label('n:a', 0, 1000), label('n:b', 310, 1000), label('n:c', 620, 1000), label('n:d', 930, 1000)];
+  run(ls, 0.3);
+  assert.ok(ls.every(shown));
 });
 
 test('names of boxes outside a selection fade with them', () => {
@@ -75,7 +91,7 @@ test('names of boxes outside a selection fade with them', () => {
   const ctx = {
     state: { labels: [a, b], t: { x: 0, y: 0, k: 0.2 }, chipEls: new Map([['n:a', { classList: { contains: (c) => c === 'hl' } }]]) },
     svg: { classList: { ...cls(), contains: (c) => c === 'dim', toggle() {} } },
-    labelsEl: { hidden: true, clientWidth: 1440, clientHeight: 800 }, LABEL_K: 0.42, LABEL_GAP: 4,
+    labelsEl: { hidden: true, clientWidth: 1440, clientHeight: 800 }, LABEL_K: 0.42, LABEL_PAD: 2, LABEL_FS: [12, 11, 10, 9], LABEL_LINES: 3,
   };
   vm.runInNewContext(`${fn('placeLabels')}; placeLabels();`, ctx);
   assert.equal(a.el.classList.contains('faint'), false);

@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **Zoomed-out names stay inside their boxes:** below 42% a box's name no longer spills past its edges or moves above or below it. It shrinks from 12px to 9px and wraps up to three lines to fit, ends in "…" if it still doesn't, and a box too small for one line shows no name.
 - **One title, more map:** the project name now appears once, in the header, at 17px. Its summary sits on one line under it (click to read it all), and the second, larger heading over the map is gone at the top level.
 - **Opens at 50%, left-aligned:** on a laptop the map opens at 50% from its left edge instead of shrunk to fit. **F** or the zoom button still fits it to the screen. Phones still open fitted.
 - **Header text no longer runs under the search box:** the title and summary end in an ellipsis before it, a tight bar drops the export date, and the overview no longer shows a lone "Overview" breadcrumb.
