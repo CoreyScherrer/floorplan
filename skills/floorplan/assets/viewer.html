@@ -105,16 +105,22 @@ svg.i { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-widt
 header { position: fixed; inset: 0 0 auto 0; height: 64px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; padding: 0 16px; z-index: 10; pointer-events: none;
   background: linear-gradient(to bottom, rgba(var(--bg-rgb), .96) 35%, rgba(var(--bg-rgb), 0)); }
 header > * { pointer-events: auto; }
-.hl { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.hl { display: flex; align-items: center; gap: 4px; min-width: 0; container-type: inline-size; }
+/* the left third of the bar: the title gives way first (ellipsis), the breadcrumbs keep their room, and a tight bar drops the export date */
+.hl .brand { flex: 0 3 auto; }
+.hl #crumbs { flex: 0 1 auto; }
+@container (max-width: 470px) { .bn-row .xtag { display: none; } }
 .hc { display: flex; justify-content: center; }
 .hr { display: flex; align-items: center; justify-content: flex-end; gap: 4px; }
-.brand { display: flex; align-items: center; gap: 10px; font-weight: 600; letter-spacing: -.01em; white-space: nowrap; padding-right: 6px; }
+.brand { display: flex; align-items: center; gap: 10px; min-width: 0; font-weight: 600; letter-spacing: -.01em; white-space: nowrap; padding-right: 6px; }
 .mark { height: 22px; width: auto; display: block; flex: none; }
 /* the map's one title: its name, and under it the one-line summary (click for all of it) */
 .bn { position: relative; display: flex; flex-direction: column; min-width: 0; }
 .bn-row { display: flex; align-items: center; min-width: 0; }
-#proj-name { font-size: 17px; letter-spacing: -.02em; }
-#proj-sub { display: block; max-width: min(460px, 34vw); margin: 1px 0 0; padding: 0; border: 0; background: none; font: inherit; font-size: 12.5px; font-weight: 400; letter-spacing: 0; color: var(--text-3); text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+/* the title and summary stop short of the search box: they shrink with the left third of the bar and end in an ellipsis */
+#proj-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; font-size: 17px; letter-spacing: -.02em; }
+.bn-row > :not(#proj-name) { flex: none; }
+#proj-sub { display: block; max-width: min(460px, 100%); margin: 1px 0 0; padding: 0; border: 0; background: none; font: inherit; font-size: 12.5px; font-weight: 400; letter-spacing: 0; color: var(--text-3); text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
 #proj-sub[hidden] { display: none; }
 #proj-sub:hover { color: var(--text-2); }
 #proj-sub:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; border-radius: 4px; }
@@ -122,6 +128,7 @@ header > * { pointer-events: auto; }
 #context:empty { display: none; }
 #context.root { display: none; }
 #crumbs { display: flex; align-items: center; min-width: 0; overflow: hidden; }
+#crumbs[hidden] { display: none; }
 #crumbs .sep { color: var(--text-4); padding: 0 1px; }
 #crumbs button { background: none; border: 0; padding: 6px 10px; border-radius: 999px; cursor: pointer; color: var(--text-3); white-space: nowrap; max-width: 220px; overflow: hidden; text-overflow: ellipsis; transition: background .2s var(--ease), color .2s var(--ease); }
 #crumbs button:hover { background: rgba(var(--ink), .06); color: var(--text); }
@@ -1342,17 +1349,19 @@ function freeArea() {
   return { x: 16, y: top, w: Math.max(200, r.width - panelW - 32), h: Math.max(140, r.height - top - bottom) };
 }
 /** The view a map opens on: 100%, from its left edge, under the top bar. A phone fits the whole map instead. */
+const HOME_K = 0.5; // a laptop opens the map at 50%, from its left edge
 function home(animate) {
   if (isPhone()) return fit(animate);
   const b = state.bounds; if (!b) return;
   const a = freeArea();
   // vertically, place the boxes that land on screen at the left edge, not the whole map's top
   // (a tall column of outside services far to the right would otherwise leave the screen empty)
-  const seen = (state.boxes || []).filter((c) => c.x < b.x + a.w - 8);
+  const k = HOME_K;
+  const seen = (state.boxes || []).filter((c) => c.x < b.x + (a.w - 8) / k);
   const y0 = seen.length ? Math.min(...seen.map((c) => c.y)) : b.y;
   const y1 = seen.length ? Math.max(...seen.map((c) => c.y + c.height)) : b.y + b.h;
-  const y = y1 - y0 <= a.h - 24 ? a.y + (a.h - (y1 - y0)) / 2 - y0 : a.y + 12 - y0;
-  setT({ k: 1, x: a.x + 8 - b.x, y }, animate);
+  const y = (y1 - y0) * k <= a.h - 24 ? a.y + (a.h - (y1 - y0) * k) / 2 - y0 * k : a.y + 12 - y0 * k;
+  setT({ k, x: a.x + 8 - b.x * k, y }, animate);
 }
 function fit(animate) {
   const b = state.bounds; if (!b) return;
@@ -1569,6 +1578,7 @@ function renderCrumbs() {
     c.appendChild(b);
   });
   $('#btn-up').hidden = state.container === 'root';
+  c.hidden = state.container === 'root'; // on the overview the title already says where you are
 }
 function renderLegend(view) {
   const total = {}; for (const l of G.links) total[l.k] = (total[l.k] || 0) + 1;
