@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **Tighter map:** boxes sit about half as far apart, across and down (130px to 70px between columns, 32px to 18px between boxes in a column), and a line running past a box now keeps 18px from its top or bottom instead of 10px. The memory-archive map fits the screen at 47% instead of 42%.
 - **Outside services in columns:** a map with more than seven outside services no longer stacks them in one column several screens tall. They share out across up to three columns on the right, each near the parts that use it. The memory-archive map now fits the screen at 42% instead of 20%.
 - **Zoomed-out names stay inside their boxes:** below 42% a box's name no longer spills past its edges or moves above or below it. It shrinks from 12px to 9px and wraps up to three lines to fit, ends in "…" if it still doesn't, and a box too small for one line shows no name.
 - **One title, more map:** the project name now appears once, in the header, at 17px. Its summary sits on one line under it (click to read it all), and the second, larger heading over the map is gone at the top level.
