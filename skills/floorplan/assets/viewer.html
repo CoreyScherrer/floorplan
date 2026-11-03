@@ -1041,15 +1041,24 @@ function recentTip(id) {
 const measure = document.createElement('canvas').getContext('2d');
 const textW = (s, px = 12, w = 500) => { measure.font = `${w} ${px}px Inter, system-ui, sans-serif`; return measure.measureText(s).width; };
 
+const EXT_PER_COL = 7, EXT_COLS_MAX = 3;
 async function layout(view) {
   const deg = new Map();
   const bump = (id) => deg.set(id, (deg.get(id) || 0) + 1);
   for (const e of view.edges) { bump(e.a); bump(e.b); }
   const children = [];
+  const isExt = (item) => item.startsWith('n:') && nodes.get(item.slice(2)).kind === 'external';
+  // outside services go on the right. A long list would make one column several screens tall, so past
+  // EXT_PER_COL they share out, in order, across up to three columns (ELK layer partitions); else one last layer
+  const exts = view.visible.filter(isExt);
+  const cols = view.connectors.length ? 1 : Math.min(EXT_COLS_MAX, Math.ceil(exts.length / EXT_PER_COL));
   for (const item of view.visible) {
     const [w, hh] = SIZES[info(item).type] || SIZES.file;
-    const ext = item.startsWith('n:') && nodes.get(item.slice(2)).kind === 'external';
-    children.push({ id: item, width: w, height: Math.max(hh + cardExtraH(item) + (answerNote(item) ? NOTE_H : 0), (deg.get(item) || 0) * 7 + 28), ...(ext ? { layoutOptions: { 'elk.layered.layering.layerConstraint': 'LAST' } } : {}) });
+    const ext = isExt(item);
+    const opts = !ext ? (cols > 1 ? { 'elk.partitioning.partition': '0' } : null)
+      : cols > 1 ? { 'elk.partitioning.partition': String(1 + (exts.indexOf(item) % cols)) }
+      : { 'elk.layered.layering.layerConstraint': 'LAST' };
+    children.push({ id: item, width: w, height: Math.max(hh + cardExtraH(item) + (answerNote(item) ? NOTE_H : 0), (deg.get(item) || 0) * 7 + 28), ...(opts ? { layoutOptions: opts } : {}) });
   }
   for (const c of view.connectors) {
     children.push({ id: c.id, width: clamp(textW(info(c.entity).name, 13) + 84, 150, 320), height: Math.max(42, (deg.get(c.id) || 0) * 7 + 14),
@@ -1065,6 +1074,7 @@ async function layout(view) {
       'elk.layered.nodePlacement.strategy': 'NETWORK_SIMPLEX', 'elk.layered.considerModelOrder.strategy': 'NODES_AND_EDGES',
       'elk.layered.thoroughness': '12', 'elk.separateConnectedComponents': 'true', 'elk.spacing.componentComponent': '80',
       'elk.padding': '[top=40,left=40,bottom=40,right=40]',
+      ...(cols > 1 ? { 'elk.partitioning.activate': 'true' } : {}),
     },
   });
 }
