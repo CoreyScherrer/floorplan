@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Readable names when zoomed out: below 42% zoom, box names move to a screen-space layer at 12px. A name that would overlap another tries above, then below, its box. If it still has no free spot it is left off, and inside parts win over outside services. Zoom in and the boxes' own titles take over.
+- Zoom controls moved to the bottom right, clear of the details panel, with 40px buttons. The fit button now shows the zoom level (for example "20%"); click it to fit the map.
+
 - **The map comes first on a laptop:**
   - **Details closed by default.** The details panel starts closed and slides open when you pick a box, without moving the map. **P** still toggles it, and keeping it open is remembered.
   - **Overview folded to one line.** The overview's description folds to one line with **More** / **Less** on every screen, not only phones, so it no longer covers the top of the map.
