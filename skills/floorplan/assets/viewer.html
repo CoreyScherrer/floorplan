@@ -587,7 +587,12 @@ html.wk svg.dim .node:not(.hl) foreignObject { opacity: .28; }
   #panel, body.no-panel #panel, #viewport.anim, #ask, #flowbar, #zoom button { transition: none; }
   #panel > *, #ask-warn { animation: none; }
 }
+/* ---------- embedded in the admin page (?embed=1 inside a frame): the page's own bar carries search and the right-hand buttons ---------- */
+html.embedded .hc, html.embedded .hr > .btn, html.embedded .hr > .rel > .btn, html.embedded #hdr-ext { display: none !important; }
+html.embedded .hr { flex: 0 0 0; }
+html.embedded #flowmenu, html.embedded #legend { position: fixed; top: 8px; right: 8px; left: auto; }
 </style>
+<script>if (window.parent !== window && /[?&]embed=1(&|$)/.test(location.search)) document.documentElement.classList.add('embedded');</script>
 </head>
 <body>
 <script>if (matchMedia('(max-width: 700px)').matches && !/[#&]s=/.test(location.hash)) document.body.classList.add('no-panel'); // a phone starts with the details closed, so the panel doesn't flash open and shut</script>
@@ -2532,6 +2537,42 @@ state.container = init.v; state.selected = init.s;
 if (init.s) { document.body.classList.remove('no-panel'); $('#btn-panel').setAttribute('aria-expanded', 'true'); } // a shared link to a box opens its details
 const fontsReady = document.fonts?.ready ? Promise.race([document.fonts.ready, new Promise((ok) => setTimeout(ok, 1500))]) : Promise.resolve();
 fontsReady.then(() => render({ after: () => { renderPanel(); emit('ready', {}); if (PLAN && window.FLOORPLAN_SERVER) showChangeResult(); } }));
+})();
+</script>
+<script>
+// Embedded: tell the page around the map which top-bar buttons exist (names, badges, open or not), and press one when it asks.
+// Only the parent window is listened to, and only buttons in this map's own top bar can be pressed.
+(() => {
+  if (!document.documentElement.classList.contains('embedded')) return;
+  const header = document.querySelector('header');
+  const controls = () => [...header.querySelectorAll('.hc .btn, .hr .btn')].filter((b) => b.id && !b.closest('#zoom, .menu'));
+  const snapshot = () => controls().map((b) => ({
+    id: b.id,
+    label: (b.querySelector('.bl, .st')?.textContent || b.getAttribute('aria-label') || '').trim(),
+    title: b.title || b.getAttribute('aria-label') || '',
+    badge: (b.querySelector('.badge')?.textContent || '').trim(),
+    pressed: b.getAttribute('aria-expanded') === 'true' || b.getAttribute('aria-pressed') === 'true' || !!b.nextElementSibling?.matches('.menu.open'),
+    hidden: !!b.hidden,
+  }));
+  // the page around the map: its real origin when the browser says (Chrome, Safari), so the list goes only there and only it is heard
+  const parentOrigin = location.ancestorOrigins?.[0] || '';
+  let queued = 0;
+  const send = () => { queued = 0; window.parent.postMessage({ type: 'fp-controls', controls: snapshot() }, parentOrigin || '*'); };
+  const schedule = () => { if (!queued) queued = setTimeout(send, 30); };
+  new MutationObserver(schedule).observe(header, { subtree: true, childList: true, attributes: true, characterData: true });
+  window.addEventListener('message', (ev) => {
+    if (ev.source !== window.parent || (parentOrigin && ev.origin !== parentOrigin) || !ev.data || typeof ev.data !== 'object') return;
+    if (ev.data.type === 'fp-click') {
+      const b = controls().find((c) => c.id === String(ev.data.id));
+      if (b && !b.disabled) b.click();
+    } else if (ev.data.type === 'fp-close') {
+      // every open menu, the built-in ones and those the UI extensions add (Screens), the way a click on the map closes them
+      document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+      document.body.click();
+    } else if (ev.data.type === 'fp-hello') send();
+  });
+  window.addEventListener('load', send);
+  send();
 })();
 </script>
 <!--__UI_EXTENSIONS__-->
