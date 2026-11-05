@@ -23,7 +23,8 @@ test('embedded, the search box and right-hand buttons hide but their menus still
 
 test('the bridge listens only to the parent window and presses only this map\'s own top-bar buttons', () => {
   assert.ok(bridge.length > 0, 'bridge sits before the UI extensions so their buttons are seen by the observer');
-  assert.match(bridge, /if \(ev\.source !== window\.parent \|\| !ev\.data \|\| typeof ev\.data !== 'object'\) return;/);
+  assert.match(bridge, /if \(ev\.source !== window\.parent \|\| \(parentOrigin && ev\.origin !== parentOrigin\) \|\| !ev\.data \|\| typeof ev\.data !== 'object'\) return;/);
+  assert.match(bridge, /postMessage\(\{ type: 'fp-controls', controls: snapshot\(\) \}, parentOrigin \|\| '\*'\)/);
   assert.match(bridge, /const b = controls\(\)\.find\(\(c\) => c\.id === String\(ev\.data\.id\)\);/);
   assert.match(bridge, /header\.querySelectorAll\('\.hc \.btn, \.hr \.btn'\)\]\.filter\(\(b\) => b\.id && !b\.closest\('#zoom, \.menu'\)\)/);
 });

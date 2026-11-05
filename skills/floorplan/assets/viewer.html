@@ -2554,12 +2554,14 @@ fontsReady.then(() => render({ after: () => { renderPanel(); emit('ready', {}); 
     pressed: b.getAttribute('aria-expanded') === 'true' || b.getAttribute('aria-pressed') === 'true' || !!b.nextElementSibling?.matches('.menu.open'),
     hidden: !!b.hidden,
   }));
+  // the page around the map: its real origin when the browser says (Chrome, Safari), so the list goes only there and only it is heard
+  const parentOrigin = location.ancestorOrigins?.[0] || '';
   let queued = 0;
-  const send = () => { queued = 0; window.parent.postMessage({ type: 'fp-controls', controls: snapshot() }, '*'); };
+  const send = () => { queued = 0; window.parent.postMessage({ type: 'fp-controls', controls: snapshot() }, parentOrigin || '*'); };
   const schedule = () => { if (!queued) queued = setTimeout(send, 30); };
   new MutationObserver(schedule).observe(header, { subtree: true, childList: true, attributes: true, characterData: true });
   window.addEventListener('message', (ev) => {
-    if (ev.source !== window.parent || !ev.data || typeof ev.data !== 'object') return;
+    if (ev.source !== window.parent || (parentOrigin && ev.origin !== parentOrigin) || !ev.data || typeof ev.data !== 'object') return;
     if (ev.data.type === 'fp-click') {
       const b = controls().find((c) => c.id === String(ev.data.id));
       if (b && !b.disabled) b.click();
