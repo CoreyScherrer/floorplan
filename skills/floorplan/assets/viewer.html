@@ -2566,8 +2566,9 @@ fontsReady.then(() => render({ after: () => { renderPanel(); emit('ready', {}); 
       const b = controls().find((c) => c.id === String(ev.data.id));
       if (b && !b.disabled) b.click();
     } else if (ev.data.type === 'fp-close') {
-      document.getElementById('flowmenu')?.classList.remove('open');
-      document.getElementById('legend')?.classList.remove('open');
+      // every open menu, the built-in ones and those the UI extensions add (Screens), the way a click on the map closes them
+      document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+      document.body.click();
     } else if (ev.data.type === 'fp-hello') send();
   });
   window.addEventListener('load', send);

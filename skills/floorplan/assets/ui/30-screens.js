@@ -96,20 +96,22 @@
     document.body.click(); // let the viewer close its own menus (Flows, filters)
     renderMenu();
     place();
-    menu.classList.add('open');
+    menu.classList.add('open'); btn.setAttribute('aria-expanded', 'true');
     menu.querySelector('#sc-q')?.focus();
   }
   function place() {
     const r = btn.getBoundingClientRect();
     const w = Math.min(340, innerWidth - 16); // never wider than the screen
-    menu.style.top = r.bottom + 8 + 'px';
     menu.style.width = w + 'px';
+    if (!r.width) { menu.style.top = '8px'; menu.style.right = '8px'; return; } // embedded: the button is in the page's bar, so the menu opens at the top right like Flows
+    menu.style.top = r.bottom + 8 + 'px';
     menu.style.right = Math.min(Math.max(8, innerWidth - r.right), innerWidth - 8 - w) + 'px';
   }
-  function closeMenu() { menu.classList.remove('open'); }
+  function closeMenu() { menu.classList.remove('open'); btn.setAttribute('aria-expanded', 'false'); }
   const isOpen = () => menu.classList.contains('open');
 
   btn = SC.addHeaderButton({ id: 'screens-btn', label: 'Screens', icon: 'ui', title: 'Pick a screen of the app to see everything behind it', onClick: () => (isOpen() ? closeMenu() : openMenu()) });
+  btn.setAttribute('aria-expanded', 'false');
   window.addEventListener('pointerdown', (ev) => { if (isOpen() && !menu.contains(ev.target) && !btn.contains(ev.target)) closeMenu(); }, true);
   window.addEventListener('keydown', (ev) => {
     if (!isOpen()) return;

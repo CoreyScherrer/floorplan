@@ -34,3 +34,14 @@ test('the bridge sends names and states only, never markup', () => {
   assert.doesNotMatch(snap, /innerHTML|outerHTML/);
   assert.match(snap, /textContent/);
 });
+
+test('a close from the page closes every menu, Screens included, the way a click on the map does', () => {
+  assert.match(bridge, /document\.body\.dispatchEvent\(new PointerEvent\('pointerdown', \{ bubbles: true \}\)\);\n      document\.body\.click\(\);/);
+});
+
+test('the Screens button says when its menu is open, and its menu opens top right when the button is in the page bar', () => {
+  const sc = fs.readFileSync(path.join(here, '..', 'skills', 'floorplan', 'assets', 'ui', '30-screens.js'), 'utf8');
+  assert.match(sc, /menu\.classList\.add\('open'\); btn\.setAttribute\('aria-expanded', 'true'\);/);
+  assert.match(sc, /function closeMenu\(\) \{ menu\.classList\.remove\('open'\); btn\.setAttribute\('aria-expanded', 'false'\); \}/);
+  assert.match(sc, /if \(!r\.width\) \{ menu\.style\.top = '8px'; menu\.style\.right = '8px'; return; \}/);
+});
