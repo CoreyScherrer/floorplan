@@ -359,10 +359,12 @@ svg.lod-labels .node .title, svg.lod-labels .card.connector .lbl { visibility: h
 .mi .hint { margin-left: auto; color: var(--text-4); font-size: 12px; }
 .mi-sep { height: 1px; background: var(--hair); margin: 5px 8px; }
 .mi-title { padding: 8px 12px 6px; font-size: 12px; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 280px; }
-#flowbar { position: absolute; left: calc((100% - var(--pw)) / 2); top: calc(var(--hh, 64px) + 12px); transform: translateX(-50%); width: min(680px, calc(100% - var(--pw) - 48px)); padding: 14px 14px 14px 20px; display: flex; gap: 12px; align-items: center; z-index: 3; border-radius: var(--r-panel); animation: sheetIn .4s var(--ease); transition: left .45s var(--ease); }
+/* a playing flow's step card sits on the left under the bar; the map keeps clear of it (freeArea) */
+#flowbar { position: fixed; left: 8px; top: calc(var(--hh, 64px) + 4px); width: min(320px, calc(100% - 16px)); padding: 14px 12px 12px 16px; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px 6px; align-items: center; z-index: 3; border-radius: var(--r-panel); animation: sheetIn .4s var(--ease); }
+#flowbar .ft { flex: 1 1 100%; }
 #flowbar[hidden] { display: none; }
 #flowbar .fk { font-size: 12px; color: var(--text-3); margin-bottom: 2px; }
-#flowbar .ft { flex: 1; min-width: 0; line-height: 1.5; }
+#flowbar .ft { min-width: 0; line-height: 1.5; }
 #flowbar .ft b { font-weight: 600; }
 #flowbar .ft span { color: var(--text-2); }
 #flowbar .dots { display: flex; gap: 4px; margin-top: 8px; }
@@ -607,7 +609,7 @@ html.wk svg.dim .node:not(.hl) foreignObject { opacity: .28; }
   #ask { left: 50%; bottom: 8px; width: calc(100% - 16px); min-width: 0; }
   #ask-input { min-width: 0; }
   #ask-form { padding-left: 14px; }
-  #flowbar { left: 50%; width: calc(100% - 16px); }
+  #flowbar { width: calc(100% - 16px); }
   #toast { left: 50%; max-width: calc(100% - 16px); }
   #loading { left: 50%; }
   header #zoom { position: static; flex: none; flex-direction: row; padding: 0; gap: 0; border-radius: 22px; } /* moved into the top row, left of the search icon */
@@ -1411,9 +1413,15 @@ function freeArea() {
   const open = !document.body.classList.contains('no-panel');
   const sheet = isPhone(); // on a phone the details panel is a sheet at the bottom, not a column at the side
   const panelW = open && !sheet ? $('#panel').offsetWidth + 32 : 0;
-  const top = ($('header').offsetHeight || 64) + 8 + Math.min(130, $('#context').offsetHeight);
+  let top = ($('header').offsetHeight || 64) + 8 + Math.min(130, $('#context').offsetHeight), left = 16;
   const bottom = open && sheet ? $('#panel').offsetHeight + 24 : $('#ask').offsetHeight + 36;
-  return { x: 16, y: top, w: Math.max(200, r.width - panelW - 32), h: Math.max(140, r.height - top - bottom) };
+  // a playing flow's card sits on the left: the map keeps to its right, or below it when there is no room beside it (phones, narrow windows)
+  const fb = $('#flowbar');
+  if (!fb.hidden) {
+    const b = fb.getBoundingClientRect(), side = b.right - r.left + 16;
+    if (!sheet && r.width - panelW - side - 16 >= 200) left = side; else top = Math.max(top, b.bottom - r.top + 8);
+  }
+  return { x: left, y: top, w: Math.max(200, r.width - panelW - left - 16), h: Math.max(140, r.height - top - bottom) };
 }
 /** The view a map opens on: 100%, from its left edge, under the top bar. A phone fits the whole map instead. */
 const HOME_K = 0.5; // a laptop opens the map at 50%, from its left edge
@@ -1567,6 +1575,21 @@ function bringIntoView(item) {
   if (box.l + dx < a.x) dx = a.x - box.l;
   if (box.t + box.h > a.y + a.h) dy = a.y + a.h - (box.t + box.h);
   if (box.t + dy < a.y) dy = a.y - box.t;
+  if (dx || dy) setT({ k, x: x + dx, y: y + dy }, true);
+}
+/** Keeps a flow step's boxes on screen together: pans just enough, zooming out only when they don't fit side by side. */
+function showBoxes(ids) {
+  const cs = ids.map((id) => state.layout?.children.find((x) => x.id === id)).filter(Boolean); if (!cs.length) return;
+  const a = freeArea(), pad = 12;
+  const l = Math.min(...cs.map((c) => c.x)), t = Math.min(...cs.map((c) => c.y)), rr = Math.max(...cs.map((c) => c.x + c.width)), bb = Math.max(...cs.map((c) => c.y + c.height));
+  let { k, x, y } = state.t;
+  const fitK = Math.min((a.w - 2 * pad) / (rr - l), (a.h - 2 * pad) / (bb - t));
+  if (fitK < k) { k = Math.max(0.08, fitK); x = a.x + (a.w - (rr - l) * k) / 2 - l * k; y = a.y + (a.h - (bb - t) * k) / 2 - t * k; return setT({ k, x, y }, true); }
+  let dx = 0, dy = 0;
+  if (rr * k + x > a.x + a.w - pad) dx = a.x + a.w - pad - (rr * k + x);
+  if (l * k + x + dx < a.x + pad) dx = a.x + pad - (l * k + x);
+  if (bb * k + y > a.y + a.h - pad) dy = a.y + a.h - pad - (bb * k + y);
+  if (t * k + y + dy < a.y + pad) dy = a.y + pad - (t * k + y);
   if (dx || dy) setT({ k, x: x + dx, y: y + dy }, true);
 }
 function centerOn(item) {
@@ -2061,6 +2084,8 @@ function highlightFlow(a, b) {
   for (const x of state.edgeEls.values()) { x.g.classList.remove('hl'); x.pg.classList.remove('hl'); }
   if (pa) state.chipEls.get(pa)?.classList.add('hl', 'sel');
   if (pb) state.chipEls.get(pb)?.classList.add('hl');
+  // the step's boxes stay in sight beside the flow card, not under it
+  showBoxes([pa, pb]);
   if (!pa || !pb) return;
   let path = null;
   for (const x of state.edgeEls.values()) if ((x.e.a === pa && x.e.b === pb) || (x.e.a === pb && x.e.b === pa)) { x.g.classList.add('hl'); x.pg.classList.add('hl'); path = { d: x.d, reverse: x.e.a === pb }; break; }
