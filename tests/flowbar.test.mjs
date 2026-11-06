@@ -4,14 +4,27 @@ import { readFileSync } from 'node:fs';
 
 const html = readFileSync(new URL('../skills/floorplan/assets/viewer.html', import.meta.url), 'utf8');
 
-test('a playing flow card sits on the left under the bar, not over the middle of the map', () => {
-  assert.match(html, /#flowbar \{ position: fixed; left: 8px; top: calc\(var\(--hh, 64px\) \+ 4px\); width: min\(320px, calc\(100% - 16px\)\);/);
-  assert.doesNotMatch(html, /#flowbar \{[^}]*translateX\(-50%\)/);
+test('the list of flows and the playing step share one left column, one width', () => {
+  assert.match(html, /#flowdock \{ position: fixed; left: 8px; top: calc\(var\(--hh, 64px\) \+ 4px\); width: min\(320px, calc\(100% - 16px\)\);/);
+  assert.match(html, /<div id="flowdock" hidden><section class="fd glass" id="fd-flows" hidden>.*<section class="fd glass" id="flowbar" hidden>/);
+  assert.match(html, /fm\.classList\.remove\('glass'\); fdFlows\.append\(fm\);/);
+  assert.doesNotMatch(html, /#flowmenu, #legend/);
 });
 
-test('the map keeps clear of the flow card and pans the step boxes into view', () => {
+test('each section collapses from the arrow at its top right', () => {
+  assert.equal((html.match(/<button type="button" class="fd-tog" aria-expanded="true"/g) || []).length, 2);
+  assert.match(html, /#flowdock \.fd\.collapsed > :not\(\.fd-h\), #flowdock \.fd\.collapsed #flowmenu \{ display: none; \}/);
+  assert.match(html, /const sec = b\.closest\('\.fd'\), shut = sec\.classList\.toggle\('collapsed'\);/);
+});
+
+test('the list stays open while a flow plays and marks the one playing', () => {
+  assert.match(html, /function closeFlows\(\) \{ if \(!state\.flow\) fm\.classList\.remove\('open'\); \}/);
+  assert.doesNotMatch(html, /r\.onclick = \(\) => \{ fm\.classList\.remove\('open'\); startFlow/);
+  assert.match(html, /r\.classList\.toggle\('on', r\.dataset\.flow === f\.id\)/);
+});
+
+test('the map keeps clear of the column and shows both step boxes', () => {
+  assert.match(html, /const b = \$\('#flowdock'\)\.getBoundingClientRect\(\), side = b\.right - r\.left \+ 16;/);
   assert.match(html, /if \(!sheet && r\.width - panelW - side - 16 >= 200\) left = side; else top = Math\.max\(top, b\.bottom - r\.top \+ 8\);/);
-  assert.match(html, /return \{ x: left, y: top, w: Math\.max\(200, r\.width - panelW - left - 16\)/);
   assert.match(html, /showBoxes\(\[pa, pb\]\);/);
-  assert.match(html, /function showBoxes\(ids\) \{/);
 });

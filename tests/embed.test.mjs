@@ -18,7 +18,7 @@ test('embed mode needs both a frame and ?embed=1, and is set before the body dra
 
 test('embedded, the search box and right-hand buttons hide but their menus still open', () => {
   assert.match(html, /html\.embedded \.hc, html\.embedded \.hr > \.btn, html\.embedded \.hr > \.rel > \.btn, html\.embedded #hdr-ext \{ display: none !important; \}/);
-  assert.match(html, /html\.embedded #flowmenu, html\.embedded #legend \{ position: fixed; top: 8px; right: 8px; left: auto; \}/);
+  assert.match(html, /html\.embedded #legend \{ position: fixed; top: 8px; right: 8px; left: auto; \}/);
 });
 
 test('the bridge listens only to the parent window and presses only this map\'s own top-bar buttons', () => {

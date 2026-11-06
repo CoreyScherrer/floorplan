@@ -85,7 +85,7 @@ test('tapping a box on a phone opens the details; going into or out of a box, or
 
 test('the top bar height is measured, and everything under it follows', () => {
   assert.match(html, /new ResizeObserver\(syncHeader\)\.observe\(headerEl\)/);
-  for (const sel of ['#context', '#flowbar', '#panel', '#panel-resize']) assert.match(html, new RegExp(`${sel} \\{[^}]*calc\\(var\\(--hh, 64px\\) \\+ \\d+px\\)`), `${sel} follows the bar`);
+  for (const sel of ['#context', '#flowdock', '#panel', '#panel-resize']) assert.match(html, new RegExp(`${sel} \\{[^}]*calc\\(var\\(--hh, 64px\\) \\+ \\d+px\\)`), `${sel} follows the bar`);
 });
 
 test('motion is switched off for people who ask for less of it', () => {
@@ -116,7 +116,7 @@ test('opening the details sheet on a phone does not re-fit the map', () => {
 });
 
 test('Flows and Filters open inside the screen wherever the bar wrapped', () => {
-  assert.match(media('(max-width: 999px), (max-width: 1279px) and (pointer: coarse)'), /header \.rel \{ position: static; \}[^\n]*\n  #flowmenu, #legend \{ position: fixed;/);
+  assert.match(media('(max-width: 999px), (max-width: 1279px) and (pointer: coarse)'), /header \.rel \{ position: static; \}[^\n]*\n  #legend \{ position: fixed;/);
 });
 
 test('the zoom buttons move out from under the ask bar on tablets and phones', () => {
