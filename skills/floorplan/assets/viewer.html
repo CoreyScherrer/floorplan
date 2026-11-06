@@ -2528,7 +2528,8 @@ window.addEventListener('keydown', (ev) => {
   if (ev.key === '/' || (ev.key === 'k' && (ev.metaKey || ev.ctrlKey))) { ev.preventDefault(); openPalette(); }
   else if (ev.key === 'Backspace') { ev.preventDefault(); up(); }
   else if (ev.key === 'Escape') {
-    if (!ctxEl.hidden || fm.classList.contains('open') || legendEl.classList.contains('open')) { closeMenu(); closeFlows(); legendEl.classList.remove('open'); }
+    // while a flow plays the list is part of it, so Escape exits the flow
+    if (!ctxEl.hidden || (fm.classList.contains('open') && !state.flow) || legendEl.classList.contains('open')) { closeMenu(); closeFlows(); legendEl.classList.remove('open'); }
     else if (isPhone() && !document.body.classList.contains('no-panel')) closeSheet(); // on a phone the first Escape puts the details sheet away
     else if (state.flow) stopFlow(); else if (state.selected) select(null); else up();
   }

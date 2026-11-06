@@ -21,10 +21,17 @@ test('the list stays open while a flow plays and marks the one playing', () => {
   assert.match(html, /function closeFlows\(\) \{ if \(!state\.flow\) fm\.classList\.remove\('open'\); \}/);
   assert.doesNotMatch(html, /r\.onclick = \(\) => \{ fm\.classList\.remove\('open'\); startFlow/);
   assert.match(html, /r\.classList\.toggle\('on', r\.dataset\.flow === f\.id\)/);
+  assert.match(html, /\(fm\.classList\.contains\('open'\) && !state\.flow\)/, 'Escape still exits a playing flow');
 });
 
 test('the map keeps clear of the column and shows both step boxes', () => {
   assert.match(html, /const b = \$\('#flowdock'\)\.getBoundingClientRect\(\), side = b\.right - r\.left \+ 16;/);
   assert.match(html, /if \(!sheet && r\.width - panelW - side - 16 >= 200\) left = side; else top = Math\.max\(top, b\.bottom - r\.top \+ 8\);/);
   assert.match(html, /showBoxes\(\[pa, pb\]\);/);
+});
+
+test('every inline script in the viewer parses', () => {
+  for (const [, code] of html.matchAll(/<script(?![^>]*src)[^>]*>([\s\S]*?)<\/script>/g)) {
+    try { new Function(code); } catch (e) { if (!/import|export|await/.test(e.message)) throw e; }
+  }
 });
