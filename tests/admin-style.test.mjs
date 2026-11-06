@@ -39,7 +39,7 @@ test('the icon buttons are 44 px with 20 px icons, and the row scrolls instead o
 });
 
 test('Flows and Connections menus are fixed under their button, so the scrolling row cannot clip them', () => {
-  assert.match(html, /#flowmenu, #legend \{ position: fixed; top: calc\(var\(--hh, 60px\) \+ 4px\); left: var\(--mx, 8px\);/);
+  assert.match(html, /#legend \{ position: fixed; top: calc\(var\(--hh, 60px\) \+ 4px\); left: var\(--mx, 8px\);/);
   assert.match(html, /const dropUnder = \(menu, btn\) => \{[^\n]*if \(menu\.classList\.contains\('open'\) && r\.width\) menu\.style\.setProperty\('--mx'/);
   assert.match(html, /fm\.classList\.toggle\('open'\); dropUnder\(fm, ev\.currentTarget\);/);
   assert.match(html, /legendEl\.classList\.toggle\('open'\); dropUnder\(legendEl, ev\.currentTarget\);/);
@@ -80,7 +80,7 @@ test('light keeps its own colours and gets the new bar', () => {
 test('embedded, the map keeps its see-through strip and hides and reports every button', () => {
   assert.match(html, /html\.embedded \.hc, html\.embedded \.hr > \.btn, html\.embedded \.hr > \.rel > \.btn, html\.embedded #hdr-ext \{ display: none !important; \}/);
   assert.match(html, /html\.embedded header \{ height: 64px;[^}]*border-bottom: 0; pointer-events: none; background: linear-gradient/);
-  assert.match(html, /html\.embedded #flowmenu, html\.embedded #legend \{ position: fixed; top: 8px; right: 8px; left: auto; \}/);
+  assert.match(html, /html\.embedded #legend \{ position: fixed; top: 8px; right: 8px; left: auto; \}/);
   // every button the bridge reports sits in .hc or .hr, where it looks
   const bridge = html.slice(html.indexOf('// Embedded: tell the page around the map'), html.indexOf('<!--__UI_EXTENSIONS__-->'));
   assert.match(bridge, /header\.querySelectorAll\('\.hc \.btn, \.hr \.btn'\)/);

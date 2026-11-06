@@ -101,7 +101,7 @@
 }
 /* ---------- dark theme chrome: the bar, details panel, menus, search, modal, toast, zoom and ask bar take the admin palette.
    Only these parts get the new values, so every rule that already uses the variables picks them up and the map is untouched. ---------- */
-:root:not([data-theme="light"]) :is(header, #panel, .menu, #palette, #modal, #toast, #zoom, #ask) {
+:root:not([data-theme="light"]) :is(header, #panel, .menu, #flowdock, #palette, #modal, #toast, #zoom, #ask) {
   --surface: var(--admin-surface); --raise: var(--admin-bg); --raise-2: var(--admin-surface-raised);
   --elev: var(--admin-surface-raised); --menu-solid: var(--admin-surface-raised); --palette-bg: var(--admin-surface-raised); --modal-bg: var(--admin-surface-raised);
   --hair: var(--admin-border-subtle); --hair-2: var(--admin-border);
@@ -113,7 +113,7 @@
 :root:not([data-theme="light"]) #proj-name { color: var(--admin-text-strong); }
 :root:not([data-theme="light"]) #search-btn { box-shadow: inset 0 0 0 1px var(--admin-border); }
 /* what is picked or open: the admin page's soft purple */
-:root:not([data-theme="light"]) :is(#results .r.active, .mi:hover, #flowmenu .r:hover, #legend label:hover, #sc-menu .sc-r:hover, #sc-menu .sc-r.on, .row:hover),
+:root:not([data-theme="light"]) :is(#results .r.active, .mi:hover, #flowmenu .r:hover, #flowmenu .r.on, #legend label:hover, #sc-menu .sc-r:hover, #sc-menu .sc-r.on, .row:hover),
 :root:not([data-theme="light"]) header .btn:is([aria-expanded="true"], [aria-pressed="true"]),
 :root:not([data-theme="light"]) header .rel:has(> .menu.open) > .btn { background: var(--admin-accent-subtle); color: var(--admin-text-strong); }
 :root[data-theme="light"] .mark { filter: invert(1); } /* the logo image is white, so it is inverted to black */
@@ -317,9 +317,9 @@ svg.lod-labels .node .title, svg.lod-labels .card.connector .lbl { visibility: h
 .menu.open { display: block; animation: menuIn .22s var(--ease); }
 @keyframes menuIn { from { opacity: 0; transform: translateY(-4px) scale(.97); } }
 /* the buttons sit in a row that scrolls, so their menus are fixed to the window and lined up under the button (dropUnder) */
-#flowmenu, #legend { position: fixed; top: calc(var(--hh, 60px) + 4px); left: var(--mx, 8px); right: auto; width: 320px; transform-origin: top left; }
+#legend { position: fixed; top: calc(var(--hh, 60px) + 4px); left: var(--mx, 8px); right: auto; width: 320px; transform-origin: top left; }
 #flowmenu .r { padding: 10px 12px; border-radius: 12px; cursor: pointer; transition: background .15s var(--ease); }
-#flowmenu .r:hover { background: rgba(var(--ink), .07); }
+#flowmenu .r:hover, #flowmenu .r.on { background: rgba(var(--ink), .07); }
 #flowmenu .r b { font-weight: 500; display: block; }
 #flowmenu .r span { color: var(--text-3); font-size: 12.5px; }
 #flowmenu .r.custom { display: flex; gap: 8px; align-items: flex-start; }
@@ -359,10 +359,22 @@ svg.lod-labels .node .title, svg.lod-labels .card.connector .lbl { visibility: h
 .mi .hint { margin-left: auto; color: var(--text-4); font-size: 12px; }
 .mi-sep { height: 1px; background: var(--hair); margin: 5px 8px; }
 .mi-title { padding: 8px 12px 6px; font-size: 12px; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 280px; }
-/* a playing flow's step card sits on the left under the bar; the map keeps clear of it (freeArea) */
-#flowbar { position: fixed; left: 8px; top: calc(var(--hh, 64px) + 4px); width: min(320px, calc(100% - 16px)); padding: 14px 12px 12px 16px; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px 6px; align-items: center; z-index: 3; border-radius: var(--r-panel); animation: sheetIn .4s var(--ease); }
+/* the flows column: the list of flows and the playing step share one column on the left under the bar, one width,
+   each with its own collapse arrow; the map keeps clear of it while a flow plays (freeArea) */
+#flowdock { position: fixed; left: 8px; top: calc(var(--hh, 64px) + 4px); width: min(320px, calc(100% - 16px)); max-height: calc(100% - var(--hh, 64px) - 16px); display: flex; flex-direction: column; gap: 8px; z-index: 9; } /* under the bar (10), so its menus open over the column */
+#flowdock[hidden], #flowdock .fd[hidden] { display: none; }
+#flowdock .fd { border-radius: var(--r-panel); display: flex; flex-direction: column; min-height: 0; animation: sheetIn .3s var(--ease); }
+#flowdock .fd-h { display: flex; align-items: center; gap: 8px; padding: 8px 8px 4px 16px; font-size: 12px; color: var(--text-3); }
+#flowdock .fd-h > span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#flowdock .fd-tog { border: 0; background: none; color: var(--text-3); width: 30px; height: 30px; border-radius: 999px; display: grid; place-items: center; cursor: pointer; flex: none; }
+#flowdock .fd-tog:hover { background: rgba(var(--ink), .08); color: var(--text); }
+#flowdock .fd-tog svg { transform: rotate(90deg); transition: transform .2s var(--ease); }
+#flowdock .fd.collapsed .fd-tog svg { transform: none; }
+#flowdock .fd.collapsed > :not(.fd-h), #flowdock .fd.collapsed #flowmenu { display: none; }
+#flowdock .fd.collapsed .fd-h { padding-bottom: 8px; }
+#flowdock #flowmenu { position: static; display: block; width: auto; min-width: 0; max-height: 40vh; overflow: auto; padding: 0 6px 6px; border-radius: 0; background: none; box-shadow: none; animation: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
+#fb-body { padding: 0 12px 12px 16px; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px 6px; align-items: center; overflow: auto; }
 #flowbar .ft { flex: 1 1 100%; }
-#flowbar[hidden] { display: none; }
 #flowbar .fk { font-size: 12px; color: var(--text-3); margin-bottom: 2px; }
 #flowbar .ft { min-width: 0; line-height: 1.5; }
 #flowbar .ft b { font-weight: 600; }
@@ -567,7 +579,7 @@ html.wk svg.dim .node:not(.hl) foreignObject { opacity: .28; }
   .brand #proj-name, .brand #proj-sub { display: none; }
   #context.root { display: block; }
   header .rel { position: static; } /* Flows and Filters open under the bar, inside the screen, wherever the bar wrapped */
-  #flowmenu, #legend { position: fixed; top: calc(var(--hh, 56px) + 4px); left: 8px; right: auto; width: min(320px, calc(100% - 16px)); max-height: 60vh; overflow: auto; }
+  #legend { position: fixed; top: calc(var(--hh, 56px) + 4px); left: 8px; right: auto; width: min(320px, calc(100% - 16px)); max-height: 60vh; overflow: auto; }
 }
 @media (max-width: 999px), (pointer: coarse) {
   /* every control in the bar, and the zoom buttons, are at least 44 px */
@@ -609,12 +621,12 @@ html.wk svg.dim .node:not(.hl) foreignObject { opacity: .28; }
   #ask { left: 50%; bottom: 8px; width: calc(100% - 16px); min-width: 0; }
   #ask-input { min-width: 0; }
   #ask-form { padding-left: 14px; }
-  #flowbar { width: calc(100% - 16px); }
+  #flowdock { width: calc(100% - 16px); }
   #toast { left: 50%; max-width: calc(100% - 16px); }
   #loading { left: 50%; }
   header #zoom { position: static; flex: none; flex-direction: row; padding: 0; gap: 0; border-radius: 22px; } /* moved into the top row, left of the search icon */
   /* menus open as full-width cards under the bar */
-  #flowmenu, #legend { position: fixed; top: calc(var(--hh, 56px) + 4px); left: 8px; right: 8px; width: auto; max-height: 60vh; overflow: auto; }
+  #legend { position: fixed; top: calc(var(--hh, 56px) + 4px); left: 8px; right: 8px; width: auto; max-height: 60vh; overflow: auto; }
   body #tour, body #cloud-card { left: 8px; right: 8px; width: auto; }
 }
 @media (prefers-reduced-motion: reduce) and (max-width: 999px), (prefers-reduced-motion: reduce) and (pointer: coarse) {
@@ -625,7 +637,7 @@ html.wk svg.dim .node:not(.hl) foreignObject { opacity: .28; }
 html.embedded .hc, html.embedded .hr > .btn, html.embedded .hr > .rel > .btn, html.embedded #hdr-ext { display: none !important; }
 html.embedded .hr { flex: 0 0 0; }
 html.embedded header { height: 64px; padding: 0 16px; border-bottom: 0; pointer-events: none; background: linear-gradient(to bottom, rgba(var(--bg-rgb), .96) 35%, rgba(var(--bg-rgb), 0)); }
-html.embedded #flowmenu, html.embedded #legend { position: fixed; top: 8px; right: 8px; left: auto; }
+html.embedded #legend { position: fixed; top: 8px; right: 8px; left: auto; }
 </style>
 <script>if (window.parent !== window && /[?&]embed=1(&|$)/.test(location.search)) document.documentElement.classList.add('embedded');</script>
 </head>
@@ -640,7 +652,7 @@ html.embedded #flowmenu, html.embedded #legend { position: fixed; top: 8px; righ
     <button id="z-fit" title="Fit to screen (F)" aria-label="Zoom 100%. Fit to screen">100%</button>
     <button id="z-in" title="Zoom in (+)"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
   </div>
-  <div id="flowbar" class="glass" hidden></div>
+  <div id="flowdock" hidden><section class="fd glass" id="fd-flows" hidden><div class="fd-h"><span>Flows</span><button type="button" class="fd-tog" aria-expanded="true" aria-label="Collapse the list of flows"><svg class="i" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></button></div></section><section class="fd glass" id="flowbar" hidden><div class="fd-h"><span id="fb-title"></span><button type="button" class="fd-tog" aria-expanded="true" aria-label="Collapse this step"><svg class="i" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></button></div><div id="fb-body"></div></section></div>
   <div id="ask">
     <div id="ask-sheet" class="glass" hidden></div>
     <div id="ask-warn" hidden></div>
@@ -1416,10 +1428,9 @@ function freeArea() {
   let top = ($('header').offsetHeight || 64) + 8 + Math.min(130, $('#context').offsetHeight), left = 16;
   const bottom = open && sheet ? $('#panel').offsetHeight + 24 : $('#ask').offsetHeight + 36;
   // a playing flow's card sits on the left: the map keeps to its right, or below it when there is no room beside it (phones, narrow windows)
-  const fb = $('#flowbar');
-  if (!fb.hidden) {
-    const b = fb.getBoundingClientRect(), side = b.right - r.left + 16;
-    if (!sheet && r.width - panelW - side - 16 >= 200) left = side; else top = Math.max(top, b.bottom - r.top + 8);
+  if (!$('#flowbar').hidden) {
+    const b = $('#flowdock').getBoundingClientRect(), side = b.right - r.left + 16;
+    if (!sheet && r.width - panelW - side - 16 >= 200) left = side; else top = Math.max(top, $('header').offsetHeight + 4 + b.height - r.top + 8); // from the bar's real height: the column's own top follows it a frame later
   }
   return { x: left, y: top, w: Math.max(200, r.width - panelW - left - 16), h: Math.max(140, r.height - top - bottom) };
 }
@@ -1944,13 +1955,31 @@ $('#search-btn').onclick = openPalette;
 // ======================= flows =======================
 const fm = $('#flowmenu');
 fm.addEventListener('click', (ev) => ev.stopPropagation());
+// the list of flows lives in the flows column with the playing step, not under the button; the button still opens it
+const dock = $('#flowdock'), fdFlows = $('#fd-flows');
+fm.classList.remove('glass'); fdFlows.append(fm);
+dock.addEventListener('click', (ev) => ev.stopPropagation());
+function syncDock() {
+  const open = fm.classList.contains('open');
+  fdFlows.hidden = !open; dock.hidden = !open && $('#flowbar').hidden;
+  $('#flows-btn').setAttribute('aria-expanded', String(open));
+}
+new MutationObserver(syncDock).observe(fm, { attributes: true, attributeFilter: ['class'] });
+dock.querySelectorAll('.fd-tog').forEach((b) => b.onclick = () => {
+  const sec = b.closest('.fd'), shut = sec.classList.toggle('collapsed');
+  b.setAttribute('aria-expanded', String(!shut));
+});
+// whenever the column changes size (a section collapses, a longer step, the bar above it wraps), keep the step's boxes in sight
+{ const ro = new ResizeObserver(() => { if (state.flow?.boxes) showBoxes(state.flow.boxes); }); ro.observe(dock); ro.observe($('header')); }
+/** Menus close on a click elsewhere, but the list of flows stays while a flow plays. */
+function closeFlows() { if (!state.flow) fm.classList.remove('open'); }
 function renderFlowMenu() {
   fm.innerHTML = G.flows.map((f) => f.custom && !EXPORTED
     ? `<div class="r custom" data-flow="${h(f.id)}"><div class="rt"><b>${h(f.title)}<span class="yours">yours</span></b><span>${f.steps.length} steps${f.description ? ' · ' + h(f.description) : ''}</span></div><button class="del" data-del="${h(f.id)}" title="Delete flow">${iconI('x')}</button></div>`
     : `<div class="r" data-flow="${h(f.id)}"><b>${h(f.title)}</b><span>${f.steps.length} steps${f.description ? ' · ' + h(f.description) : ''}</span></div>`).join('')
     + (EXPORTED ? (G.flows.length ? '' : '<div class="r" style="cursor:default"><span>No flows in this copy.</span></div>') : (G.flows.length ? '<div class="mi-sep"></div>' : '')
     + `<div class="r new" data-new>${iconI('spark')}<b>Request a new flow…</b></div>`);
-  fm.querySelectorAll('[data-flow]').forEach((r) => r.onclick = () => { fm.classList.remove('open'); startFlow(r.dataset.flow); });
+  fm.querySelectorAll('[data-flow]').forEach((r) => r.onclick = () => startFlow(r.dataset.flow));
   fm.querySelectorAll('[data-del]').forEach((b) => b.onclick = (ev) => { ev.stopPropagation(); deleteCustomFlow(b.dataset.del); });
   const nf = fm.querySelector('[data-new]'); if (nf) nf.onclick = showFlowForm;
 }
@@ -2052,9 +2081,9 @@ const dropUnder = (menu, btn) => { const r = btn.getBoundingClientRect(); if (me
 $('#flows-btn').onclick = (ev) => { ev.stopPropagation(); legendEl.classList.remove('open'); fm.classList.toggle('open'); dropUnder(fm, ev.currentTarget); };
 $('#filters-btn').onclick = (ev) => { ev.stopPropagation(); fm.classList.remove('open'); legendEl.classList.toggle('open'); dropUnder(legendEl, ev.currentTarget); };
 legendEl.addEventListener('click', (ev) => ev.stopPropagation());
-window.addEventListener('click', () => { fm.classList.remove('open'); legendEl.classList.remove('open'); });
+window.addEventListener('click', () => { closeFlows(); legendEl.classList.remove('open'); });
 function startFlow(id) { const f = G.flows.find((x) => x.id === id); if (!f) return; state.flow = { f, i: 0 }; flowStep(); }
-function stopFlow() { state.flow = null; document.body.classList.remove('in-flow'); $('#flowbar').hidden = true; vp.querySelectorAll('.flowfx').forEach((x) => x.remove()); select(null); }
+function stopFlow() { state.flow = null; document.body.classList.remove('in-flow'); $('#flowbar').hidden = true; fm.classList.remove('open'); fm.querySelectorAll('.r.on').forEach((r) => r.classList.remove('on')); fdFlows.classList.remove('collapsed'); fdFlows.querySelector('.fd-tog').setAttribute('aria-expanded', 'true'); syncDock(); vp.querySelectorAll('.flowfx').forEach((x) => x.remove()); select(null); }
 function lcaContainer(a, b) {
   const cb = new Set(chain(b));
   for (const x of chain(a)) if (cb.has(x)) return (x === a || x === b) ? (parentOf.get(x) || 'root') : x;
@@ -2065,12 +2094,16 @@ function flowStep() {
   const { f, i } = state.flow;
   const a = f.steps[i].ref, b = f.steps[i + 1]?.ref;
   const container = b ? lcaContainer(a, b) : parentOf.get(a) || 'root';
-  const bar = $('#flowbar'); bar.hidden = false;
-  bar.innerHTML = `<div class="ft"><div class="fk">${h(f.title)} · step ${i + 1} of ${f.steps.length}</div><b>${h(info(a).name)}</b>${b ? ` <span>→</span> <b>${h(info(b).name)}</b>` : ''}<br><span>${h(f.steps[i].note)}</span><div class="dots">${f.steps.map((_, k) => `<i class="${k <= i ? 'on' : ''}"></i>`).join('')}</div></div>
+  const bar = $('#flowbar'); bar.hidden = false; syncDock();
+  fm.querySelectorAll('[data-flow]').forEach((r) => r.classList.toggle('on', r.dataset.flow === f.id));
+  $('#fb-title').textContent = `Step ${i + 1} of ${f.steps.length}`;
+  $('#fb-body').innerHTML = `<div class="ft"><div class="fk">${h(f.title)}</div><b>${h(info(a).name)}</b>${b ? ` <span>→</span> <b>${h(info(b).name)}</b>` : ''}<br><span>${h(f.steps[i].note)}</span><div class="dots">${f.steps.map((_, k) => `<i class="${k <= i ? 'on' : ''}"></i>`).join('')}</div></div>
     <button class="btn icon" id="fl-prev" ${i === 0 ? 'disabled' : ''}>${iconI('left')}</button><button class="btn icon" id="fl-next">${iconI(i >= f.steps.length - 1 ? 'x' : 'right')}</button><button class="btn icon" id="fl-x" title="Exit">${iconI('x')}</button>`;
   $('#fl-prev').onclick = () => { state.flow.i--; flowStep(); };
   $('#fl-next').onclick = () => { if (state.flow.i >= f.steps.length - 1) stopFlow(); else { state.flow.i++; flowStep(); } };
   $('#fl-x').onclick = stopFlow;
+  // a small window where the map must go below the column: fold the list away so the step's boxes still have room (checked once the step is filled in, so its real height counts)
+  if (!fdFlows.classList.contains('collapsed') && freeArea().x === 16 && stageRect().bottom - ($('header').offsetHeight + 4 + dock.offsetHeight) < 260) { fdFlows.classList.add('collapsed'); fdFlows.querySelector('.fd-tog').setAttribute('aria-expanded', 'false'); }
   // an answer's walkthrough plays on the answer board itself
   if (state.flow.inPlace) { if (state.container === 'q:answer') highlightFlow(a, b); else go('q:answer', { after: () => highlightFlow(a, b) }); }
   else go(container, { after: () => highlightFlow(a, b) });
@@ -2085,6 +2118,7 @@ function highlightFlow(a, b) {
   if (pa) state.chipEls.get(pa)?.classList.add('hl', 'sel');
   if (pb) state.chipEls.get(pb)?.classList.add('hl');
   // the step's boxes stay in sight beside the flow card, not under it
+  if (state.flow) state.flow.boxes = [pa, pb];
   showBoxes([pa, pb]);
   if (!pa || !pb) return;
   let path = null;
@@ -2496,7 +2530,8 @@ window.addEventListener('keydown', (ev) => {
   if (ev.key === '/' || (ev.key === 'k' && (ev.metaKey || ev.ctrlKey))) { ev.preventDefault(); openPalette(); }
   else if (ev.key === 'Backspace') { ev.preventDefault(); up(); }
   else if (ev.key === 'Escape') {
-    if (!ctxEl.hidden || fm.classList.contains('open') || legendEl.classList.contains('open')) { closeMenu(); fm.classList.remove('open'); legendEl.classList.remove('open'); }
+    // while a flow plays the list is part of it, so Escape exits the flow
+    if (!ctxEl.hidden || (fm.classList.contains('open') && !state.flow) || legendEl.classList.contains('open')) { closeMenu(); closeFlows(); legendEl.classList.remove('open'); }
     else if (isPhone() && !document.body.classList.contains('no-panel')) closeSheet(); // on a phone the first Escape puts the details sheet away
     else if (state.flow) stopFlow(); else if (state.selected) select(null); else up();
   }
@@ -2557,7 +2592,7 @@ window.Floorplan = Object.freeze({
   go, reveal, select, open, up, fit, render: (o) => render({ keepTransform: true, ...o }), refreshPanel: () => renderPanel(),
   showBoard, playFlow, startFlow, stopFlow: () => { if (state.flow) stopFlow(); },
   freeArea: () => freeArea(),
-  closeMenus: () => { closeMenu(); fm.classList.remove('open'); legendEl.classList.remove('open'); },
+  closeMenus: () => { closeMenu(); closeFlows(); legendEl.classList.remove('open'); },
   // asking
   addAskContext, ask: (text) => { closeSheet(); askInput.value = text; submitAsk(); }, askEngine: () => askState.engine,
   // a blueprint's Change mode: whether it's available here, and putting a request in the Ask bar to finish and send
