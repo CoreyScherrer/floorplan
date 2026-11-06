@@ -22,6 +22,7 @@ test('the list stays open while a flow plays and marks the one playing', () => {
   assert.doesNotMatch(html, /r\.onclick = \(\) => \{ fm\.classList\.remove\('open'\); startFlow/);
   assert.match(html, /r\.classList\.toggle\('on', r\.dataset\.flow === f\.id\)/);
   assert.match(html, /\(fm\.classList\.contains\('open'\) && !state\.flow\)/, 'Escape still exits a playing flow');
+  assert.match(html, /function stopFlow\(\) \{[^\n]*fdFlows\.classList\.remove\('collapsed'\)/, 'exiting a flow opens the list again next time');
 });
 
 test('the map keeps clear of the column and shows both step boxes', () => {

@@ -2083,7 +2083,7 @@ $('#filters-btn').onclick = (ev) => { ev.stopPropagation(); fm.classList.remove(
 legendEl.addEventListener('click', (ev) => ev.stopPropagation());
 window.addEventListener('click', () => { closeFlows(); legendEl.classList.remove('open'); });
 function startFlow(id) { const f = G.flows.find((x) => x.id === id); if (!f) return; state.flow = { f, i: 0 }; flowStep(); }
-function stopFlow() { state.flow = null; document.body.classList.remove('in-flow'); $('#flowbar').hidden = true; fm.classList.remove('open'); fm.querySelectorAll('.r.on').forEach((r) => r.classList.remove('on')); syncDock(); vp.querySelectorAll('.flowfx').forEach((x) => x.remove()); select(null); }
+function stopFlow() { state.flow = null; document.body.classList.remove('in-flow'); $('#flowbar').hidden = true; fm.classList.remove('open'); fm.querySelectorAll('.r.on').forEach((r) => r.classList.remove('on')); fdFlows.classList.remove('collapsed'); fdFlows.querySelector('.fd-tog').setAttribute('aria-expanded', 'true'); syncDock(); vp.querySelectorAll('.flowfx').forEach((x) => x.remove()); select(null); }
 function lcaContainer(a, b) {
   const cb = new Set(chain(b));
   for (const x of chain(a)) if (cb.has(x)) return (x === a || x === b) ? (parentOf.get(x) || 'root') : x;
