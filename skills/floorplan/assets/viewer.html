@@ -561,7 +561,7 @@ html.wk svg.dim .node:not(.hl) foreignObject { opacity: .28; }
   .hc { flex: 0 3 min(460px, 24vw); max-width: 460px; min-width: 44px; justify-content: stretch; }
   #search-btn { width: 100%; min-width: 44px; }
   #search-btn .st { overflow: hidden; text-overflow: ellipsis; }
-  .hr { flex: 1 1 0; }
+  .hr { flex: 0 1 auto; } /* hugs its icons, so search follows them as on a computer; it still shrinks and scrolls when tight */
   .brand #proj-name, .brand #proj-sub { display: none; }
   #context.root { display: block; }
   header .rel { position: static; } /* Flows and Filters open under the bar, inside the screen, wherever the bar wrapped */

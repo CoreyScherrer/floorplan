@@ -30,7 +30,7 @@ function media(condition) {
 test('on phones and tablets nothing can run off the screen: the bar wraps, the buttons scroll on a tablet and get their own wrapping row on a phone', () => {
   const css = media('(max-width: 999px), (max-width: 1279px) and (pointer: coarse)');
   assert.match(css, /header \{[^}]*display: flex; flex-wrap: wrap;/);
-  assert.match(css, /\.hr \{ flex: 1 1 0; \}/); // the buttons take the room left in the row and scroll inside it (the base rule)
+  assert.match(css, /\.hr \{ flex: 0 1 auto; \}/); // the buttons hug their icons so search follows them (Corey 2026-11-05), shrinking and scrolling when tight
   assert.match(media('(max-width: 700px)'), /\.hr \{ order: 2; flex: 1 1 100%; flex-wrap: wrap; overflow: visible;/);
   assert.match(html, /\nheader \.hr \.btn \.bl \{ display: none; \}/); // icons keep a name (aria-label) when their words are hidden
 });
