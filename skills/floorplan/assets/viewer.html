@@ -2096,8 +2096,8 @@ function flowStep() {
   const container = b ? lcaContainer(a, b) : parentOf.get(a) || 'root';
   const bar = $('#flowbar'); bar.hidden = false; syncDock();
   fm.querySelectorAll('[data-flow]').forEach((r) => r.classList.toggle('on', r.dataset.flow === f.id));
-  $('#fb-title').textContent = `Step ${i + 1} of ${f.steps.length}`; // the flow's name is the marked row in the list above
-  $('#fb-body').innerHTML = `<div class="ft"><b>${h(info(a).name)}</b>${b ? ` <span>→</span> <b>${h(info(b).name)}</b>` : ''}<br><span>${h(f.steps[i].note)}</span><div class="dots">${f.steps.map((_, k) => `<i class="${k <= i ? 'on' : ''}"></i>`).join('')}</div></div>
+  $('#fb-title').textContent = `Step ${i + 1} of ${f.steps.length}`;
+  $('#fb-body').innerHTML = `<div class="ft"><div class="fk">${h(f.title)}</div><b>${h(info(a).name)}</b>${b ? ` <span>→</span> <b>${h(info(b).name)}</b>` : ''}<br><span>${h(f.steps[i].note)}</span><div class="dots">${f.steps.map((_, k) => `<i class="${k <= i ? 'on' : ''}"></i>`).join('')}</div></div>
     <button class="btn icon" id="fl-prev" ${i === 0 ? 'disabled' : ''}>${iconI('left')}</button><button class="btn icon" id="fl-next">${iconI(i >= f.steps.length - 1 ? 'x' : 'right')}</button><button class="btn icon" id="fl-x" title="Exit">${iconI('x')}</button>`;
   $('#fl-prev').onclick = () => { state.flow.i--; flowStep(); };
   $('#fl-next').onclick = () => { if (state.flow.i >= f.steps.length - 1) stopFlow(); else { state.flow.i++; flowStep(); } };
