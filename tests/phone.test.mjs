@@ -27,18 +27,18 @@ function media(condition) {
   return out;
 }
 
-test('on phones and tablets the top bar wraps onto a second row, so nothing can run off the screen', () => {
+test('on phones and tablets nothing can run off the screen: the bar wraps, the buttons scroll on a tablet and get their own wrapping row on a phone', () => {
   const css = media('(max-width: 999px), (max-width: 1279px) and (pointer: coarse)');
   assert.match(css, /header \{[^}]*display: flex; flex-wrap: wrap;/);
-  assert.match(css, /\.hr \{[^}]*flex-wrap: wrap;/);
-  assert.match(css, /\.hr \.btn \.bl \{ display: none; \}/);
+  assert.match(css, /\.hr \{ flex: 0 1 auto; \}/); // the buttons hug their icons so search follows them (Corey 2026-11-05), shrinking and scrolling when tight
+  assert.match(media('(max-width: 700px)'), /\.hr \{ order: 2; flex: 1 1 100%; flex-wrap: wrap; overflow: visible;/);
+  assert.match(html, /\nheader \.hr \.btn \.bl \{ display: none; \}/); // icons keep a name (aria-label) when their words are hidden
 });
 
-test('a mouse at 1000 px and wider keeps exactly the old top bar: every change to the bar sits inside a phone/tablet rule', () => {
-  assert.match(html, /header \{ position: fixed; inset: 0 0 auto 0; height: 64px; display: grid; grid-template-columns: 1fr auto 1fr;/);
+test('a mouse at 1000 px and wider gets one bar that never wraps; the phone/tablet changes sit inside their own rules', () => {
+  assert.match(html, /header \{ position: fixed; inset: 0 0 auto 0; height: 60px; display: flex;/);
   const outside = html.replace(/@media [^{]*\{(?:[^{}]|\{[^{}]*\})*\}/g, '');
   assert.doesNotMatch(outside, /header \{[^}]*flex-wrap/);
-  assert.doesNotMatch(outside, /\.hr \.btn \.bl \{ display: none/);
   assert.doesNotMatch(outside, /#btn-up, \.brand \{ flex: none; \}/); // the Up arrow and logo are not changed on a computer
   assert.doesNotMatch(outside, /header \.btn:focus-visible/);
 });
@@ -120,7 +120,7 @@ test('Flows and Filters open inside the screen wherever the bar wrapped', () => 
 });
 
 test('the zoom buttons move out from under the ask bar on tablets and phones', () => {
-  assert.match(html, /@media \(max-width: 999px\), \(max-width: 1279px\) and \(pointer: coarse\) \{\n  header \.hr \.btn \{ width: 44px; \}[\s\S]*?#zoom \{ left: auto; right: calc\(var\(--pw\) \+ 16px\); bottom: auto; top: calc\(var\(--hh, 56px\) \+ 8px\);/);
+  assert.match(html, /@media \(max-width: 999px\), \(max-width: 1279px\) and \(pointer: coarse\) \{\n  \/\* the zoom buttons move[^\n]*\n  #zoom \{ left: auto; right: calc\(var\(--pw\) \+ 16px\); bottom: auto; top: calc\(var\(--hh, 56px\) \+ 8px\);/);
 });
 
 test('the phone sheet is reachable and closable by keyboard: Escape closes it, closed it is hidden from tab and screen readers, focus moves in and back', () => {
@@ -156,7 +156,7 @@ test('on a phone the zoom buttons sit side by side in the top row, beside the se
   assert.match(media('(max-width: 700px)'), /#crumbs button:not\(\.cur\), #crumbs \.sep \{ display: none; \}/); // the path shows where you are, so the row fits at 360 px
 });
 
-test('nothing new shows on a computer: the buttons added no new tooltips', () => {
+test('the search box shows its words, so it needs no tooltip; Flows is an icon now, so it has one', () => {
   assert.doesNotMatch(html, /id="search-btn" title=/);
-  assert.doesNotMatch(html, /id="flows-btn" title=/);
+  assert.match(html, /id="flows-btn" title="Flows" aria-label="Flows"/);
 });

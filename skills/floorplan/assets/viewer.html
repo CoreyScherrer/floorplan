@@ -62,6 +62,16 @@
   --panel-w: 360px; --pw: calc(var(--panel-w) + 32px); --gutter: 28px;
   color-scheme: dark;
 }
+/* ---------- dark theme, admin chrome: the admin surface of the CoreyScherrer.com design system (docs/design/tokens.css,
+   --color-admin-*), so the bar, panel and menus match the admin page that embeds the map. The map itself (cards, kinds,
+   lines, grid) keeps the values above. Light keeps its own chrome colours. ---------- */
+:root:not([data-theme="light"]) {
+  --admin-bg: #060610; --admin-surface: #1a1a24; --admin-surface-raised: #12121a;
+  --admin-border: #2a2a3a; --admin-border-subtle: rgba(var(--ink), .06);
+  --admin-text: #e0e0e0; --admin-text-strong: #fff; --admin-text-subtle: #9ca3af; --admin-muted: #888888;
+  --admin-accent: #6f42c1; --admin-accent-light: #8b5cf6; --admin-accent-subtle: rgba(111, 66, 193, .15);
+  --bar-bg: var(--admin-surface); --bar-line: var(--admin-border);
+}
 /* ---------- light theme: same variables, new values. Chosen by the Theme button (see ui/05-theme.js) ---------- */
 :root[data-theme="light"] {
   color-scheme: light;
@@ -87,7 +97,25 @@
   --n-test: #c43c86; --n-script: #c06a1d; --n-infra: #c94a4a; --n-external: #a24dbb; --n-misc: #666666; --n-dir: #666666; --n-file: #666666;
   --n-module: #666666; --n-symbol: #6a55c4; --n-route: #2f6fe0; --n-connector: #666666;
   --m-GET: #1a8a5b; --m-POST: #2f6fe0; --m-PUT: #a8710c; --m-PATCH: #7a4fd0; --m-DELETE: #c94a4a; --m-CALL: #0d7f8c; --m-ANY: #666666;
+  --bar-bg: #ffffff; --bar-line: rgba(0, 0, 0, .09);
 }
+/* ---------- dark theme chrome: the bar, details panel, menus, search, modal, toast, zoom and ask bar take the admin palette.
+   Only these parts get the new values, so every rule that already uses the variables picks them up and the map is untouched. ---------- */
+:root:not([data-theme="light"]) :is(header, #panel, .menu, #palette, #modal, #toast, #zoom, #ask) {
+  --surface: var(--admin-surface); --raise: var(--admin-bg); --raise-2: var(--admin-surface-raised);
+  --elev: var(--admin-surface-raised); --menu-solid: var(--admin-surface-raised); --palette-bg: var(--admin-surface-raised); --modal-bg: var(--admin-surface-raised);
+  --hair: var(--admin-border-subtle); --hair-2: var(--admin-border);
+  --text: var(--admin-text); --text-2: var(--admin-text-subtle); --text-3: var(--admin-text-subtle); --text-4: var(--admin-muted);
+  --on: var(--admin-accent); --on-hover: var(--admin-accent-light); --on-text: var(--admin-text-strong);
+  --ring: var(--admin-accent-light); --focus: var(--admin-accent-subtle);
+  --shadow-float: 0 0 0 1px var(--admin-border), 0 12px 32px rgba(0, 0, 0, .35);
+}
+:root:not([data-theme="light"]) #proj-name { color: var(--admin-text-strong); }
+:root:not([data-theme="light"]) #search-btn { box-shadow: inset 0 0 0 1px var(--admin-border); }
+/* what is picked or open: the admin page's soft purple */
+:root:not([data-theme="light"]) :is(#results .r.active, .mi:hover, #flowmenu .r:hover, #legend label:hover, #sc-menu .sc-r:hover, #sc-menu .sc-r.on, .row:hover),
+:root:not([data-theme="light"]) header .btn:is([aria-expanded="true"], [aria-pressed="true"]),
+:root:not([data-theme="light"]) header .rel:has(> .menu.open) > .btn { background: var(--admin-accent-subtle); color: var(--admin-text-strong); }
 :root[data-theme="light"] .mark { filter: invert(1); } /* the logo image is white, so it is inverted to black */
 :root[data-theme="light"] #search::placeholder { color: var(--text-3); } /* the browser's default grey is too faint on white */
 html.theme-switching *, html.theme-switching *::before, html.theme-switching *::after { transition: none !important; } /* a change of theme is instant, never animated */
@@ -101,23 +129,29 @@ svg.i { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-widt
 .glass { background: var(--elev); backdrop-filter: blur(20px) saturate(1.2); -webkit-backdrop-filter: blur(20px) saturate(1.2); box-shadow: var(--shadow-float); }
 .kbd { font-family: var(--mono); font-size: 10.5px; color: var(--text-3); background: rgba(var(--ink), .06); border-radius: 6px; padding: 1px 6px; line-height: 17px; }
 
-/* ---------- top bar: brand + path left, search centered, actions right ---------- */
-header { position: fixed; inset: 0 0 auto 0; height: 64px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; padding: 0 16px; z-index: 10; pointer-events: none;
-  background: linear-gradient(to bottom, rgba(var(--bg-rgb), .96) 35%, rgba(var(--bg-rgb), 0)); }
+/* ---------- top bar: one solid 60 px bar like the admin page's. Left to right: logo, name and path; the icon buttons; search ---------- */
+header { position: fixed; inset: 0 0 auto 0; height: 60px; display: flex; align-items: center; gap: 10px; padding: 0 12px; z-index: 10;
+  background: var(--bar-bg); border-bottom: 1px solid var(--bar-line); }
 header > * { pointer-events: auto; }
-.hl { display: flex; align-items: center; gap: 4px; min-width: 0; container-type: inline-size; }
-/* the left third of the bar: the title gives way first (ellipsis), the breadcrumbs keep their room, and a tight bar drops the export date */
+.hl { display: flex; align-items: center; gap: 4px; flex: 0 1 auto; min-width: 160px; }
+/* the left of the bar: the title gives way first (ellipsis), the breadcrumbs keep their room, and a tight bar drops the export date */
 .hl .brand { flex: 0 3 auto; }
 .hl #crumbs { flex: 0 1 auto; }
-@container (max-width: 470px) { .bn-row .xtag { display: none; } }
-.hc { display: flex; justify-content: center; }
-.hr { display: flex; align-items: center; justify-content: flex-end; gap: 4px; }
+@media (max-width: 1199px) { .bn-row .xtag { display: none; } } /* sized by its content now, so the window width decides */
+.hc { display: flex; flex: none; justify-content: center; }
+/* the icon buttons scroll sideways (no scrollbar) instead of running under the search box when the bar is tight */
+.hr { display: flex; align-items: center; justify-content: flex-start; gap: 2px; flex: 0 1 auto; min-width: 0; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
+.hr::-webkit-scrollbar { display: none; }
+header .hr .btn { position: relative; flex: none; width: 44px; height: 44px; padding: 0; justify-content: center; }
+header .hr .btn .bl { display: none; }
+header .hr .btn .badge { position: absolute; top: 4px; right: 2px; }
+.hr svg.i { width: 20px; height: 20px; }
 .brand { display: flex; align-items: center; gap: 10px; min-width: 0; font-weight: 600; letter-spacing: -.01em; white-space: nowrap; padding-right: 6px; }
 .mark { height: 22px; width: auto; display: block; flex: none; }
 /* the map's one title: its name, and under it the one-line summary (click for all of it) */
-.bn { position: relative; display: flex; flex-direction: column; min-width: 0; }
+.bn { position: relative; display: flex; flex-direction: column; min-width: 0; max-width: 480px; } /* a long summary can't widen the bar past this; the buttons sit right after the title */
 .bn-row { display: flex; align-items: center; min-width: 0; }
-/* the title and summary stop short of the search box: they shrink with the left third of the bar and end in an ellipsis */
+/* the title and summary stop short of the search box: they shrink with the left of the bar and end in an ellipsis */
 #proj-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; font-size: 17px; letter-spacing: -.02em; }
 .bn-row > :not(#proj-name) { flex: none; }
 #proj-sub { display: block; max-width: min(460px, 100%); margin: 1px 0 0; padding: 0; border: 0; background: none; font: inherit; font-size: 12.5px; font-weight: 400; letter-spacing: 0; color: var(--text-3); text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
@@ -145,7 +179,7 @@ header > * { pointer-events: auto; }
 .btn:disabled { opacity: .35; cursor: default; }
 .btn .badge { min-width: 16px; height: 16px; border-radius: 999px; background: var(--on); color: var(--on-text); font-size: 10px; font-weight: 600; display: grid; place-items: center; padding: 0 4px; }
 #btn-up[hidden] { display: none; }
-#search-btn { width: min(460px, 36vw); height: 40px; justify-content: flex-start; gap: 10px; padding: 0 8px 0 16px; background: var(--raise); color: var(--text-3); }
+#search-btn { width: min(460px, 36vw); height: 44px; justify-content: flex-start; gap: 10px; padding: 0 8px 0 16px; background: var(--raise); color: var(--text-3); }
 /* the Theme button adds 48px (44px and a gap) to the right side, so the search box gives up the same, and the project name and buttons fit as before. Under 701px the bar is the phone layout's job and is left as it was. */
 @media (min-width: 701px) { #search-btn { width: min(460px, max(calc(36vw - 48px), 250px)); } }
 #search-btn:hover { background: var(--raise-2); color: var(--text-2); }
@@ -282,7 +316,8 @@ svg.lod-labels .node .title, svg.lod-labels .card.connector .lbl { visibility: h
 .menu { position: absolute; z-index: 30; min-width: 230px; padding: 6px; border-radius: 18px; display: none; transform-origin: top right; }
 .menu.open { display: block; animation: menuIn .22s var(--ease); }
 @keyframes menuIn { from { opacity: 0; transform: translateY(-4px) scale(.97); } }
-#flowmenu, #legend { top: 44px; right: 0; width: 320px; }
+/* the buttons sit in a row that scrolls, so their menus are fixed to the window and lined up under the button (dropUnder) */
+#flowmenu, #legend { position: fixed; top: calc(var(--hh, 60px) + 4px); left: var(--mx, 8px); right: auto; width: 320px; transform-origin: top left; }
 #flowmenu .r { padding: 10px 12px; border-radius: 12px; cursor: pointer; transition: background .15s var(--ease); }
 #flowmenu .r:hover { background: rgba(var(--ink), .07); }
 #flowmenu .r b { font-weight: 500; display: block; }
@@ -519,20 +554,18 @@ html.wk svg.dim .node:not(.hl) foreignObject { opacity: .28; }
 @media (max-width: 999px), (max-width: 1279px) and (pointer: coarse) {
   #btn-up, .brand { flex: none; }
   header .btn:focus-visible, #zoom button:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; }
-  /* one flowing row that wraps to a second row, so nothing runs off the edge; buttons keep their icons and lose their words */
-  header { display: flex; flex-wrap: wrap; align-items: center; height: auto; min-height: 56px; padding: 6px 12px; gap: 0 8px; }
-  .hl { flex: 1 1 240px; }
-  .hc { flex: 2 3 min(460px, 24vw); max-width: 460px; min-width: 44px; justify-content: stretch; }
+  /* one row in the same order as on a computer: the icon buttons take the room left and scroll inside it; the bar may still wrap
+     to a second row (a phone puts the buttons there), so nothing runs off the edge */
+  header { display: flex; flex-wrap: wrap; align-items: center; height: auto; min-height: 60px; padding: 8px 12px; gap: 0 8px; }
+  .hl { flex: 0 1 auto; min-width: 44px; max-width: 45%; }
+  .hc { flex: 0 3 min(460px, 24vw); max-width: 460px; min-width: 44px; justify-content: stretch; }
   #search-btn { width: 100%; min-width: 44px; }
   #search-btn .st { overflow: hidden; text-overflow: ellipsis; }
-  .hr { flex: 0 0 auto; flex-wrap: wrap; }
+  .hr { flex: 0 1 auto; } /* hugs its icons, so search follows them as on a computer; it still shrinks and scrolls when tight */
   .brand #proj-name, .brand #proj-sub { display: none; }
   #context.root { display: block; }
   header .rel { position: static; } /* Flows and Filters open under the bar, inside the screen, wherever the bar wrapped */
   #flowmenu, #legend { position: fixed; top: calc(var(--hh, 56px) + 4px); left: 8px; right: auto; width: min(320px, calc(100% - 16px)); max-height: 60vh; overflow: auto; }
-  .hr .btn { position: relative; padding: 0; justify-content: center; }
-  .hr .btn .bl { display: none; }
-  .hr .btn .badge { position: absolute; }
 }
 @media (max-width: 999px), (pointer: coarse) {
   /* every control in the bar, and the zoom buttons, are at least 44 px */
@@ -543,8 +576,6 @@ html.wk svg.dim .node:not(.hl) foreignObject { opacity: .28; }
   #zoom button { width: 44px; height: 44px; }
 }
 @media (max-width: 999px), (max-width: 1279px) and (pointer: coarse) {
-  header .hr .btn { width: 44px; }
-  header .hr .btn .badge { top: 4px; right: 2px; }
   /* the zoom buttons move to the top of the map, left of the details panel, so the ask bar can't cover them */
   #zoom { left: auto; right: calc(var(--pw) + 16px); bottom: auto; top: calc(var(--hh, 56px) + 8px); flex-direction: column; border-radius: 26px; }
   #context { max-width: min(520px, calc(100% - var(--pw) - 104px)); } /* stops short of the zoom buttons */
@@ -553,8 +584,9 @@ html.wk svg.dim .node:not(.hl) foreignObject { opacity: .28; }
   :root { --gutter: 20px; }
   body, body.no-panel { --pw: 0px; }
   header { padding: 6px 8px; gap: 0 4px; }
-  .hl { flex-basis: 120px; }
-  .hr { flex: 1 1 100%; justify-content: space-between; }
+  .hl { flex: 1 1 120px; max-width: none; }
+  /* the buttons get a second row of their own, and wrap onto a third rather than scroll */
+  .hr { order: 2; flex: 1 1 100%; flex-wrap: wrap; overflow: visible; justify-content: space-between; }
   .brand { padding-right: 0; }
   .hc { flex: 0 0 44px; }
   #search-btn { padding: 0; justify-content: center; gap: 0; }
@@ -590,6 +622,7 @@ html.wk svg.dim .node:not(.hl) foreignObject { opacity: .28; }
 /* ---------- embedded in the admin page (?embed=1 inside a frame): the page's own bar carries search and the right-hand buttons ---------- */
 html.embedded .hc, html.embedded .hr > .btn, html.embedded .hr > .rel > .btn, html.embedded #hdr-ext { display: none !important; }
 html.embedded .hr { flex: 0 0 0; }
+html.embedded header { height: 64px; padding: 0 16px; border-bottom: 0; pointer-events: none; background: linear-gradient(to bottom, rgba(var(--bg-rgb), .96) 35%, rgba(var(--bg-rgb), 0)); }
 html.embedded #flowmenu, html.embedded #legend { position: fixed; top: 8px; right: 8px; left: auto; }
 </style>
 <script>if (window.parent !== window && /[?&]embed=1(&|$)/.test(location.search)) document.documentElement.classList.add('embedded');</script>
@@ -627,14 +660,14 @@ html.embedded #flowmenu, html.embedded #legend { position: fixed; top: 8px; righ
     <button class="btn icon" id="btn-up" title="Up one level (Backspace)" aria-label="Up one level" hidden><svg class="i" viewBox="0 0 24 24"><path d="M19 12H5M11 18l-6-6 6-6"/></svg></button>
     <nav id="crumbs"></nav>
   </div>
-  <div class="hc">
-    <button class="btn" id="search-btn" aria-label="Search files, routes, modules"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span class="st">Search files, routes, modules</span><span class="kbd">/</span></button>
-  </div>
   <div class="hr">
     <div id="hdr-ext" class="hr-ext"></div>
-    <div class="rel"><button class="btn" id="flows-btn" aria-label="Flows"><svg class="i" viewBox="0 0 24 24"><path d="M7 5v14l11-7z"/></svg><span class="bl">Flows</span></button><div id="flowmenu" class="menu glass"></div></div>
+    <div class="rel"><button class="btn" id="flows-btn" title="Flows" aria-label="Flows"><svg class="i" viewBox="0 0 24 24"><path d="M7 5v14l11-7z"/></svg><span class="bl">Flows</span></button><div id="flowmenu" class="menu glass"></div></div>
     <div class="rel"><button class="btn icon" id="filters-btn" title="Connection types" aria-label="Connection types"><svg class="i" viewBox="0 0 24 24"><path d="M4 6h16M7 12h10M10 18h4"/></svg></button><div id="legend" class="menu glass"></div></div>
     <button class="btn icon" id="btn-panel" title="Toggle details (P)" aria-label="Toggle details" aria-expanded="true"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M15 4v16"/></svg></button>
+  </div>
+  <div class="hc">
+    <button class="btn" id="search-btn" aria-label="Search files, routes, modules"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span class="st">Search files, routes, modules</span><span class="kbd">/</span></button>
   </div>
 </header>
 <aside id="panel"></aside>
@@ -1991,8 +2024,10 @@ async function requestFlow(prompt) {
   } finally { setBusy(false); }
 }
 const legendEl = $('#legend');
-$('#flows-btn').onclick = (ev) => { ev.stopPropagation(); legendEl.classList.remove('open'); fm.classList.toggle('open'); };
-$('#filters-btn').onclick = (ev) => { ev.stopPropagation(); fm.classList.remove('open'); legendEl.classList.toggle('open'); };
+// a menu opens under its button, kept inside the window; embedded (the button is in the page's bar, so it has no size) the CSS puts it top right
+const dropUnder = (menu, btn) => { const r = btn.getBoundingClientRect(); if (menu.classList.contains('open') && r.width) menu.style.setProperty('--mx', clamp(r.left, 8, innerWidth - menu.offsetWidth - 8) + 'px'); };
+$('#flows-btn').onclick = (ev) => { ev.stopPropagation(); legendEl.classList.remove('open'); fm.classList.toggle('open'); dropUnder(fm, ev.currentTarget); };
+$('#filters-btn').onclick = (ev) => { ev.stopPropagation(); fm.classList.remove('open'); legendEl.classList.toggle('open'); dropUnder(legendEl, ev.currentTarget); };
 legendEl.addEventListener('click', (ev) => ev.stopPropagation());
 window.addEventListener('click', () => { fm.classList.remove('open'); legendEl.classList.remove('open'); });
 function startFlow(id) { const f = G.flows.find((x) => x.id === id); if (!f) return; state.flow = { f, i: 0 }; flowStep(); }

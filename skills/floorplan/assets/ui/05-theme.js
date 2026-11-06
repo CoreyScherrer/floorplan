@@ -22,7 +22,7 @@
     #theme-toggle::before { content: ""; position: absolute; inset: 4px; border-radius: 999px; transition: background .2s var(--ease); }
     #theme-toggle:hover { background: none; }
     #theme-toggle:hover::before { background: rgba(var(--ink), .07); }
-    #theme-toggle svg { position: relative; width: 18px; height: 18px; }
+    #theme-toggle svg { position: relative; width: 20px; height: 20px; }
     #theme-toggle:focus-visible { outline: 2px solid var(--ring); outline-offset: -3px; }
     .theme-status { position: fixed; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
     @media (prefers-reduced-motion: reduce) { #theme-toggle, #theme-toggle::before { transition: none; } #theme-toggle:active { transform: none; } }`;
