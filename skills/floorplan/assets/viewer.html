@@ -2095,8 +2095,6 @@ function flowStep() {
   const a = f.steps[i].ref, b = f.steps[i + 1]?.ref;
   const container = b ? lcaContainer(a, b) : parentOf.get(a) || 'root';
   const bar = $('#flowbar'); bar.hidden = false; syncDock();
-  // a small window where the map must go below the column: fold the list away so the step's boxes still have room
-  if (!fdFlows.classList.contains('collapsed') && freeArea().x === 16 && stageRect().bottom - dock.getBoundingClientRect().bottom < 260) { fdFlows.classList.add('collapsed'); fdFlows.querySelector('.fd-tog').setAttribute('aria-expanded', 'false'); }
   fm.querySelectorAll('[data-flow]').forEach((r) => r.classList.toggle('on', r.dataset.flow === f.id));
   $('#fb-title').textContent = `Step ${i + 1} of ${f.steps.length}`;
   $('#fb-body').innerHTML = `<div class="ft"><div class="fk">${h(f.title)}</div><b>${h(info(a).name)}</b>${b ? ` <span>→</span> <b>${h(info(b).name)}</b>` : ''}<br><span>${h(f.steps[i].note)}</span><div class="dots">${f.steps.map((_, k) => `<i class="${k <= i ? 'on' : ''}"></i>`).join('')}</div></div>
@@ -2104,6 +2102,8 @@ function flowStep() {
   $('#fl-prev').onclick = () => { state.flow.i--; flowStep(); };
   $('#fl-next').onclick = () => { if (state.flow.i >= f.steps.length - 1) stopFlow(); else { state.flow.i++; flowStep(); } };
   $('#fl-x').onclick = stopFlow;
+  // a small window where the map must go below the column: fold the list away so the step's boxes still have room (checked once the step is filled in, so its real height counts)
+  if (!fdFlows.classList.contains('collapsed') && freeArea().x === 16 && stageRect().bottom - ($('header').offsetHeight + 4 + dock.offsetHeight) < 260) { fdFlows.classList.add('collapsed'); fdFlows.querySelector('.fd-tog').setAttribute('aria-expanded', 'false'); }
   // an answer's walkthrough plays on the answer board itself
   if (state.flow.inPlace) { if (state.container === 'q:answer') highlightFlow(a, b); else go('q:answer', { after: () => highlightFlow(a, b) }); }
   else go(container, { after: () => highlightFlow(a, b) });
