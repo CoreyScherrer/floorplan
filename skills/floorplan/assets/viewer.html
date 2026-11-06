@@ -361,7 +361,7 @@ svg.lod-labels .node .title, svg.lod-labels .card.connector .lbl { visibility: h
 .mi-title { padding: 8px 12px 6px; font-size: 12px; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 280px; }
 /* the flows column: the list of flows and the playing step share one column on the left under the bar, one width,
    each with its own collapse arrow; the map keeps clear of it while a flow plays (freeArea) */
-#flowdock { position: fixed; left: 8px; top: calc(var(--hh, 64px) + 4px); width: min(320px, calc(100% - 16px)); max-height: calc(100% - var(--hh, 64px) - 16px); display: flex; flex-direction: column; gap: 8px; z-index: 30; }
+#flowdock { position: fixed; left: 8px; top: calc(var(--hh, 64px) + 4px); width: min(320px, calc(100% - 16px)); max-height: calc(100% - var(--hh, 64px) - 16px); display: flex; flex-direction: column; gap: 8px; z-index: 9; } /* under the bar (10), so its menus open over the column */
 #flowdock[hidden], #flowdock .fd[hidden] { display: none; }
 #flowdock .fd { border-radius: var(--r-panel); display: flex; flex-direction: column; min-height: 0; animation: sheetIn .3s var(--ease); }
 #flowdock .fd-h { display: flex; align-items: center; gap: 8px; padding: 8px 8px 4px 16px; font-size: 12px; color: var(--text-3); }

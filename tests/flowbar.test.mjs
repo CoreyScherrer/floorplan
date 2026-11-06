@@ -9,6 +9,7 @@ test('the list of flows and the playing step share one left column, one width', 
   assert.match(html, /<div id="flowdock" hidden><section class="fd glass" id="fd-flows" hidden>.*<section class="fd glass" id="flowbar" hidden>/);
   assert.match(html, /fm\.classList\.remove\('glass'\); fdFlows\.append\(fm\);/);
   assert.doesNotMatch(html, /#flowmenu, #legend/);
+  assert.match(html, /gap: 8px; z-index: 9; \} \/\* under the bar \(10\)/, 'the bar\'s menus open over the column');
 });
 
 test('each section collapses from the arrow at its top right', () => {
