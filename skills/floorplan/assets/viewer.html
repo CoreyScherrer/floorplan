@@ -1413,10 +1413,14 @@ function freeArea() {
   const open = !document.body.classList.contains('no-panel');
   const sheet = isPhone(); // on a phone the details panel is a sheet at the bottom, not a column at the side
   const panelW = open && !sheet ? $('#panel').offsetWidth + 32 : 0;
-  const top = ($('header').offsetHeight || 64) + 8 + Math.min(130, $('#context').offsetHeight);
+  let top = ($('header').offsetHeight || 64) + 8 + Math.min(130, $('#context').offsetHeight), left = 16;
   const bottom = open && sheet ? $('#panel').offsetHeight + 24 : $('#ask').offsetHeight + 36;
-  const fb = $('#flowbar'); // a playing flow's card sits on the left; on a phone it spans the top instead
-  const left = !fb.hidden && !sheet ? Math.max(16, fb.getBoundingClientRect().right - r.left + 16) : 16;
+  // a playing flow's card sits on the left: the map keeps to its right, or below it when there is no room beside it (phones, narrow windows)
+  const fb = $('#flowbar');
+  if (!fb.hidden) {
+    const b = fb.getBoundingClientRect(), side = b.right - r.left + 16;
+    if (!sheet && r.width - panelW - side - 16 >= 200) left = side; else top = Math.max(top, b.bottom - r.top + 8);
+  }
   return { x: left, y: top, w: Math.max(200, r.width - panelW - left - 16), h: Math.max(140, r.height - top - bottom) };
 }
 /** The view a map opens on: 100%, from its left edge, under the top bar. A phone fits the whole map instead. */
@@ -1571,6 +1575,21 @@ function bringIntoView(item) {
   if (box.l + dx < a.x) dx = a.x - box.l;
   if (box.t + box.h > a.y + a.h) dy = a.y + a.h - (box.t + box.h);
   if (box.t + dy < a.y) dy = a.y - box.t;
+  if (dx || dy) setT({ k, x: x + dx, y: y + dy }, true);
+}
+/** Keeps a flow step's boxes on screen together: pans just enough, zooming out only when they don't fit side by side. */
+function showBoxes(ids) {
+  const cs = ids.map((id) => state.layout?.children.find((x) => x.id === id)).filter(Boolean); if (!cs.length) return;
+  const a = freeArea(), pad = 12;
+  const l = Math.min(...cs.map((c) => c.x)), t = Math.min(...cs.map((c) => c.y)), rr = Math.max(...cs.map((c) => c.x + c.width)), bb = Math.max(...cs.map((c) => c.y + c.height));
+  let { k, x, y } = state.t;
+  const fitK = Math.min((a.w - 2 * pad) / (rr - l), (a.h - 2 * pad) / (bb - t));
+  if (fitK < k) { k = Math.max(0.08, fitK); x = a.x + (a.w - (rr - l) * k) / 2 - l * k; y = a.y + (a.h - (bb - t) * k) / 2 - t * k; return setT({ k, x, y }, true); }
+  let dx = 0, dy = 0;
+  if (rr * k + x > a.x + a.w - pad) dx = a.x + a.w - pad - (rr * k + x);
+  if (l * k + x + dx < a.x + pad) dx = a.x + pad - (l * k + x);
+  if (bb * k + y > a.y + a.h - pad) dy = a.y + a.h - pad - (bb * k + y);
+  if (t * k + y + dy < a.y + pad) dy = a.y + pad - (t * k + y);
   if (dx || dy) setT({ k, x: x + dx, y: y + dy }, true);
 }
 function centerOn(item) {
@@ -2066,7 +2085,7 @@ function highlightFlow(a, b) {
   if (pa) state.chipEls.get(pa)?.classList.add('hl', 'sel');
   if (pb) state.chipEls.get(pb)?.classList.add('hl');
   // the step's boxes stay in sight beside the flow card, not under it
-  if (pb) bringIntoView(pb); if (pa) bringIntoView(pa);
+  showBoxes([pa, pb]);
   if (!pa || !pb) return;
   let path = null;
   for (const x of state.edgeEls.values()) if ((x.e.a === pa && x.e.b === pb) || (x.e.a === pb && x.e.b === pa)) { x.g.classList.add('hl'); x.pg.classList.add('hl'); path = { d: x.d, reverse: x.e.a === pb }; break; }

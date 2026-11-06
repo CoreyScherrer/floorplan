@@ -10,7 +10,8 @@ test('a playing flow card sits on the left under the bar, not over the middle of
 });
 
 test('the map keeps clear of the flow card and pans the step boxes into view', () => {
-  assert.match(html, /const left = !fb\.hidden && !sheet \? Math\.max\(16, fb\.getBoundingClientRect\(\)\.right - r\.left \+ 16\) : 16;/);
+  assert.match(html, /if \(!sheet && r\.width - panelW - side - 16 >= 200\) left = side; else top = Math\.max\(top, b\.bottom - r\.top \+ 8\);/);
   assert.match(html, /return \{ x: left, y: top, w: Math\.max\(200, r\.width - panelW - left - 16\)/);
-  assert.match(html, /if \(pb\) bringIntoView\(pb\); if \(pa\) bringIntoView\(pa\);/);
+  assert.match(html, /showBoxes\(\[pa, pb\]\);/);
+  assert.match(html, /function showBoxes\(ids\) \{/);
 });
