@@ -56,5 +56,5 @@ test('on the overview the breadcrumb is hidden; elsewhere it keeps its room and 
   assert.match(html, /c\.hidden = state\.container === 'root';/);
   assert.match(html, /#crumbs\[hidden\] \{ display: none; \}/);
   assert.match(html, /\.hl \.brand \{ flex: 0 3 auto; \}\n\.hl #crumbs \{ flex: 0 1 auto; \}/);
-  assert.match(html, /@container \(max-width: 470px\) \{ \.bn-row \.xtag \{ display: none; \} \}/);
+  assert.match(html, /@media \(max-width: 1199px\) \{ \.bn-row \.xtag \{ display: none; \} \}/); // a tight bar drops the export date
 });
