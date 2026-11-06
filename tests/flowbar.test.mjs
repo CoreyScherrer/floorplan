@@ -25,11 +25,12 @@ test('the list stays open while a flow plays and marks the one playing', () => {
   assert.match(html, /\(fm\.classList\.contains\('open'\) && !state\.flow\)/, 'Escape still exits a playing flow');
   assert.match(html, /function stopFlow\(\) \{[^\n]*fdFlows\.classList\.remove\('collapsed'\)/, 'exiting a flow opens the list again next time');
   assert.match(html, /\$\('#fb-body'\)\.innerHTML = `<div class="ft"><div class="fk">\$\{h\(f\.title\)\}<\/div>/, 'the step card names its flow');
+  assert.match(html, /freeArea\(\)\.x === 16 && stageRect\(\)\.bottom - dock\.getBoundingClientRect\(\)\.bottom < 260\) \{ fdFlows\.classList\.add\('collapsed'\)/, 'a cramped window folds the list away');
 });
 
 test('the map keeps clear of the column and shows both step boxes', () => {
   assert.match(html, /const b = \$\('#flowdock'\)\.getBoundingClientRect\(\), side = b\.right - r\.left \+ 16;/);
-  assert.match(html, /if \(!sheet && r\.width - panelW - side - 16 >= 200\) left = side; else top = Math\.max\(top, b\.bottom - r\.top \+ 8\);/);
+  assert.match(html, /if \(!sheet && r\.width - panelW - side - 16 >= 200\) left = side; else top = Math\.max\(top, \$\('header'\)\.offsetHeight \+ 4 \+ b\.height - r\.top \+ 8\);/);
   assert.match(html, /showBoxes\(\[pa, pb\]\);/);
 });
 

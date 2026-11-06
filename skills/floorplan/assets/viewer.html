@@ -1430,7 +1430,7 @@ function freeArea() {
   // a playing flow's card sits on the left: the map keeps to its right, or below it when there is no room beside it (phones, narrow windows)
   if (!$('#flowbar').hidden) {
     const b = $('#flowdock').getBoundingClientRect(), side = b.right - r.left + 16;
-    if (!sheet && r.width - panelW - side - 16 >= 200) left = side; else top = Math.max(top, b.bottom - r.top + 8);
+    if (!sheet && r.width - panelW - side - 16 >= 200) left = side; else top = Math.max(top, $('header').offsetHeight + 4 + b.height - r.top + 8); // from the bar's real height: the column's own top follows it a frame later
   }
   return { x: left, y: top, w: Math.max(200, r.width - panelW - left - 16), h: Math.max(140, r.height - top - bottom) };
 }
@@ -1970,7 +1970,7 @@ dock.querySelectorAll('.fd-tog').forEach((b) => b.onclick = () => {
   b.setAttribute('aria-expanded', String(!shut));
 });
 // whenever the column changes size (a section collapses, a longer step, the bar above it wraps), keep the step's boxes in sight
-new ResizeObserver(() => { if (state.flow?.boxes) showBoxes(state.flow.boxes); }).observe(dock);
+{ const ro = new ResizeObserver(() => { if (state.flow?.boxes) showBoxes(state.flow.boxes); }); ro.observe(dock); ro.observe($('header')); }
 /** Menus close on a click elsewhere, but the list of flows stays while a flow plays. */
 function closeFlows() { if (!state.flow) fm.classList.remove('open'); }
 function renderFlowMenu() {
@@ -1979,7 +1979,7 @@ function renderFlowMenu() {
     : `<div class="r" data-flow="${h(f.id)}"><b>${h(f.title)}</b><span>${f.steps.length} steps${f.description ? ' · ' + h(f.description) : ''}</span></div>`).join('')
     + (EXPORTED ? (G.flows.length ? '' : '<div class="r" style="cursor:default"><span>No flows in this copy.</span></div>') : (G.flows.length ? '<div class="mi-sep"></div>' : '')
     + `<div class="r new" data-new>${iconI('spark')}<b>Request a new flow…</b></div>`);
-  fm.querySelectorAll('[data-flow]').forEach((r) => r.onclick = () => { if (isPhone()) { fdFlows.classList.add('collapsed'); fdFlows.querySelector('.fd-tog').setAttribute('aria-expanded', 'false'); } startFlow(r.dataset.flow); });
+  fm.querySelectorAll('[data-flow]').forEach((r) => r.onclick = () => startFlow(r.dataset.flow));
   fm.querySelectorAll('[data-del]').forEach((b) => b.onclick = (ev) => { ev.stopPropagation(); deleteCustomFlow(b.dataset.del); });
   const nf = fm.querySelector('[data-new]'); if (nf) nf.onclick = showFlowForm;
 }
@@ -2095,6 +2095,8 @@ function flowStep() {
   const a = f.steps[i].ref, b = f.steps[i + 1]?.ref;
   const container = b ? lcaContainer(a, b) : parentOf.get(a) || 'root';
   const bar = $('#flowbar'); bar.hidden = false; syncDock();
+  // a small window where the map must go below the column: fold the list away so the step's boxes still have room
+  if (!fdFlows.classList.contains('collapsed') && freeArea().x === 16 && stageRect().bottom - dock.getBoundingClientRect().bottom < 260) { fdFlows.classList.add('collapsed'); fdFlows.querySelector('.fd-tog').setAttribute('aria-expanded', 'false'); }
   fm.querySelectorAll('[data-flow]').forEach((r) => r.classList.toggle('on', r.dataset.flow === f.id));
   $('#fb-title').textContent = `Step ${i + 1} of ${f.steps.length}`;
   $('#fb-body').innerHTML = `<div class="ft"><div class="fk">${h(f.title)}</div><b>${h(info(a).name)}</b>${b ? ` <span>→</span> <b>${h(info(b).name)}</b>` : ''}<br><span>${h(f.steps[i].note)}</span><div class="dots">${f.steps.map((_, k) => `<i class="${k <= i ? 'on' : ''}"></i>`).join('')}</div></div>
