@@ -13,9 +13,9 @@ test('the list of flows and the playing step share one left column, one width', 
 });
 
 test('each section collapses from the arrow at its top right', () => {
-  assert.equal((html.match(/<button type="button" class="fd-tog" aria-expanded="true"/g) || []).length, 2);
+  assert.equal((html.match(/<button type="button" class="fd-tog" aria-expanded="true"/g) || []).length, 3); // Flows, the step, and the dockSection template
   assert.match(html, /#flowdock \.fd\.collapsed > :not\(\.fd-h\), #flowdock \.fd\.collapsed #flowmenu \{ display: none; \}/);
-  assert.match(html, /const sec = b\.closest\('\.fd'\), shut = sec\.classList\.toggle\('collapsed'\);/);
+  assert.match(html, /const b = ev\.target\.closest\('\.fd-tog'\); if \(!b\) return;\n  const shut = b\.closest\('\.fd'\)\.classList\.toggle\('collapsed'\);/);
 });
 
 test('the list stays open while a flow plays and marks the one playing', () => {
@@ -39,4 +39,27 @@ test('every inline script in the viewer parses', () => {
   for (const [, code] of html.matchAll(/<script(?![^>]*src)[^>]*>([\s\S]*?)<\/script>/g)) {
     try { new Function(code); } catch (e) { if (!/import|export|await/.test(e.message)) throw e; }
   }
+});
+
+const tour = readFileSync(new URL('../skills/floorplan/assets/ui/40-tour.js', import.meta.url), 'utf8');
+
+test('the tour card is a card in the same left column', () => {
+  assert.match(html, /dockSection: \(opts\) => dockSection\(opts\),/);
+  assert.match(tour, /const card = SC\.dockSection\(\{ id: 'tour', title: 'Start here', label: 'the tour' \}\);/);
+  assert.doesNotMatch(tour, /#tour \{ position: fixed;/);
+  assert.match(tour, /card\.querySelector\('\.fd-tog'\)\.before\(closeBtn\);/, 'its close button sits beside the arrow');
+});
+
+test('each card scrolls on its own and the map stays clear of the column', () => {
+  assert.match(html, /#flowdock \.fd-b \{ min-height: 0; overflow: auto; overscroll-behavior: contain; \}/);
+  assert.match(html, /#flowdock #flowmenu \{[^}]*min-height: 0; overflow: auto; overscroll-behavior: contain;/);
+  assert.doesNotMatch(html, /#flowdock #flowmenu \{[^}]*max-height: 40vh/);
+  assert.match(html, /if \(!\$\('#flowdock'\)\.hidden\) \{/, 'the map keeps clear whenever the column shows, not only during a flow');
+  assert.match(html, /function clearColumn\(\) \{/);
+  assert.match(html, /if \(!behind\) return;\n  const dx = side \? col\.r - col\.l : 0, dy = side \? 0 : col\.b - col\.t;/, 'the map moves by the column\'s size, never further');
+  assert.match(html, /if \(cleared\) return; \/\/ once per opening/, 'it moves once per opening, not again as the column grows');
+  assert.match(html, /else if \(same\(cleared\)\) setT\(\{ k, x: x - cleared\.dx, y: y - cleared\.dy \}, true\);/, 'closing the column puts the map back');
+  assert.match(html, /if \(same\(placed\?\.t\)\) placed\.fn\(true\);/, 'a fit made around the column is redone for the full width when it closes');
+  assert.match(html, /placedAround\(fit\);/); assert.match(html, /placedAround\(home\);/);
+  assert.match(html, /new ResizeObserver\(\(\) => \{ clearColumn\(\);/);
 });

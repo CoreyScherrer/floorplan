@@ -10,11 +10,11 @@
 
   const style = document.createElement('style');
   style.textContent = `
-#tour { position: fixed; left: 16px; bottom: 76px; width: min(360px, calc(100vw - 32px)); padding: 16px 16px 12px 20px; border-radius: var(--r-panel); z-index: 6; animation: tourIn .4s var(--ease); }
-#tour[hidden] { display: none; }
-#tour .tk { font-size: 12px; color: var(--text-3); margin-bottom: 4px; display: flex; gap: 6px; align-items: center; }
-#tour .tk i { width: 3px; height: 3px; border-radius: 50%; background: var(--text-4); }
-#tour .tt { font-size: 16px; font-weight: 600; letter-spacing: -.01em; line-height: 1.35; padding-right: 22px; }
+/* the tour is a card in the left column with Flows and the playing step (dockSection): same width, its own arrow, its own scroll */
+#tour .fd-h .tx { width: 30px; height: 30px; flex: none; }
+#tour .fd-b { padding: 0 16px 12px; }
+#tour .tk { font-size: 12px; color: var(--text-3); margin-bottom: 4px; }
+#tour .tt { font-size: 16px; font-weight: 600; letter-spacing: -.01em; line-height: 1.35; }
 #tour .tn { color: var(--text-2); line-height: 1.55; margin-top: 6px; font-size: 13.5px; }
 #tour .tip { color: var(--text-3); font-size: 12px; line-height: 1.5; margin-top: 10px; }
 #tour .tf { display: flex; align-items: center; gap: 8px; margin-top: 14px; }
@@ -23,7 +23,6 @@
 #tour .dots i.on { background: var(--on); }
 #tour .tf .btn { height: 32px; }
 #tour .tf .btn.icon { width: 32px; }
-#tour .tx { position: absolute; top: 10px; right: 10px; width: 28px; height: 28px; }
 @keyframes tourIn { from { opacity: 0; transform: translateY(8px) scale(.98); } }
 `;
   document.head.appendChild(style);
@@ -77,13 +76,14 @@
   }
 
   // ---------- card ----------
-  const card = document.createElement('div');
-  card.id = 'tour';
-  card.className = 'glass';
-  card.hidden = true;
+  const card = SC.dockSection({ id: 'tour', title: 'Start here', label: 'the tour' });
+  const head = card.querySelector('.fd-h > span'), body = card.querySelector('.fd-b');
+  const closeBtn = document.createElement('button');
+  closeBtn.type = 'button'; closeBtn.className = 'btn icon tx'; closeBtn.title = 'Close (Esc)'; closeBtn.setAttribute('aria-label', 'Close the tour');
+  closeBtn.innerHTML = SC.iconI('x'); closeBtn.onclick = () => end();
+  card.querySelector('.fd-tog').before(closeBtn);
   card.setAttribute('role', 'dialog');
   card.setAttribute('aria-label', 'Start here tour');
-  document.body.appendChild(card);
   let steps = [], at = -1;
   const active = () => at >= 0;
 
@@ -96,35 +96,22 @@
   function render() {
     const s = steps[at], last = at === steps.length - 1;
     const tip = last ? `Replay this tour any time from <b>Start here</b> at the top.${window.FloorplanScreens ? ' <b>Screens</b> shows everything behind any page.' : ''}` : '';
-    card.innerHTML = `<button class="btn icon tx" data-x title="Close (Esc)">${SC.iconI('x')}</button>
-      <div class="tk"><span>Start here</span><i></i><span>${at + 1} of ${steps.length}</span>${s.kicker ? `<i></i><span>${h(s.kicker)}</span>` : ''}</div>
+    head.textContent = `Start here · ${at + 1} of ${steps.length}`;
+    body.innerHTML = `${s.kicker ? `<div class="tk">${h(s.kicker)}</div>` : ''}
       <div class="tt">${h(s.title)}</div>${s.note ? `<div class="tn">${h(s.note)}</div>` : ''}${tip ? `<div class="tip">${tip}</div>` : ''}
       <div class="tf"><div class="dots">${steps.map((_, k) => `<i class="${k <= at ? 'on' : ''}"></i>`).join('')}</div>
         ${at > 0 ? `<button class="btn icon soft" data-back title="Back (←)">${SC.iconI('left')}</button>` : `<button class="btn" data-x>Skip</button>`}
         ${s.flow ? `<button class="btn primary" data-play>${SC.iconI('right')}Play it</button>${last ? '' : '<button class="btn soft" data-next>Next</button>'}` : `<button class="btn primary" data-next>${last ? 'Done' : 'Next'}</button>`}
       </div>`;
-    card.querySelectorAll('[data-x]').forEach((b) => b.onclick = end);
+    body.querySelectorAll('[data-x]').forEach((b) => b.onclick = end);
     card.querySelector('[data-back]')?.addEventListener('click', back);
     card.querySelector('[data-next]')?.addEventListener('click', next);
     card.querySelector('[data-play]')?.addEventListener('click', () => { const id = s.flow; end(); SC.startFlow(id); });
   }
-  // sit above the zoom controls, and above the Ask bar (and its notices) where they overlap
-  function place() {
-    let bottom = 76;
-    const ask = document.getElementById('ask');
-    if (ask) {
-      const a = ask.getBoundingClientRect(), c = card.getBoundingClientRect();
-      const top = [...ask.children].filter((x) => x.offsetParent && x.getBoundingClientRect().height > 0).reduce((m, x) => Math.min(m, x.getBoundingClientRect().top), a.bottom);
-      if (a.width && a.left < 16 + c.width + 12 && top < innerHeight) bottom = Math.max(bottom, innerHeight - top + 12);
-    }
-    card.style.bottom = Math.min(bottom, Math.max(76, innerHeight - card.offsetHeight - 80)) + 'px';
-  }
-  window.addEventListener('resize', () => { if (active()) place(); });
   function show(i) {
     at = i;
     card.hidden = false;
     render();
-    place();
     go(steps[at]);
     if (at === 0) setTimeout(() => SC.fit(true), 450);
   }

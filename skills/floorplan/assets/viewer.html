@@ -363,7 +363,10 @@ svg.lod-labels .node .title, svg.lod-labels .card.connector .lbl { visibility: h
    each with its own collapse arrow; the map keeps clear of it while a flow plays (freeArea) */
 #flowdock { position: fixed; left: 8px; top: calc(var(--hh, 64px) + 4px); width: min(320px, calc(100% - 16px)); max-height: calc(100% - var(--hh, 64px) - 16px); display: flex; flex-direction: column; gap: 8px; z-index: 9; } /* under the bar (10), so its menus open over the column */
 #flowdock[hidden], #flowdock .fd[hidden] { display: none; }
-#flowdock .fd { border-radius: var(--r-panel); display: flex; flex-direction: column; min-height: 0; animation: sheetIn .3s var(--ease); }
+#flowdock .fd { border-radius: var(--r-panel); display: flex; flex-direction: column; flex: 0 1 auto; min-height: 0; animation: sheetIn .3s var(--ease); }
+/* each card scrolls on its own: the header stays put and the part under it scrolls when the column runs out of height */
+#flowdock .fd-h { flex: none; }
+#flowdock .fd-b { min-height: 0; overflow: auto; overscroll-behavior: contain; }
 #flowdock .fd-h { display: flex; align-items: center; gap: 8px; padding: 8px 8px 4px 16px; font-size: 12px; color: var(--text-3); }
 #flowdock .fd-h > span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #flowdock .fd-tog { border: 0; background: none; color: var(--text-3); width: 30px; height: 30px; border-radius: 999px; display: grid; place-items: center; cursor: pointer; flex: none; }
@@ -372,8 +375,8 @@ svg.lod-labels .node .title, svg.lod-labels .card.connector .lbl { visibility: h
 #flowdock .fd.collapsed .fd-tog svg { transform: none; }
 #flowdock .fd.collapsed > :not(.fd-h), #flowdock .fd.collapsed #flowmenu { display: none; }
 #flowdock .fd.collapsed .fd-h { padding-bottom: 8px; }
-#flowdock #flowmenu { position: static; display: block; width: auto; min-width: 0; max-height: 40vh; overflow: auto; padding: 0 6px 6px; border-radius: 0; background: none; box-shadow: none; animation: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
-#fb-body { padding: 0 12px 12px 16px; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px 6px; align-items: center; overflow: auto; }
+#flowdock #flowmenu { position: static; display: block; width: auto; min-width: 0; min-height: 0; overflow: auto; overscroll-behavior: contain; padding: 0 6px 6px; border-radius: 0; background: none; box-shadow: none; animation: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
+#fb-body { min-height: 0; overscroll-behavior: contain; padding: 0 12px 12px 16px; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px 6px; align-items: center; overflow: auto; }
 #flowbar .ft { flex: 1 1 100%; }
 #flowbar .fk { font-size: 12px; color: var(--text-3); margin-bottom: 2px; }
 #flowbar .ft { min-width: 0; line-height: 1.5; }
@@ -627,7 +630,7 @@ html.wk svg.dim .node:not(.hl) foreignObject { opacity: .28; }
   header #zoom { position: static; flex: none; flex-direction: row; padding: 0; gap: 0; border-radius: 22px; } /* moved into the top row, left of the search icon */
   /* menus open as full-width cards under the bar */
   #legend { position: fixed; top: calc(var(--hh, 56px) + 4px); left: 8px; right: 8px; width: auto; max-height: 60vh; overflow: auto; }
-  body #tour, body #cloud-card { left: 8px; right: 8px; width: auto; }
+  body #cloud-card { left: 8px; right: 8px; width: auto; }
 }
 @media (prefers-reduced-motion: reduce) and (max-width: 999px), (prefers-reduced-motion: reduce) and (pointer: coarse) {
   #panel, body.no-panel #panel, #viewport.anim, #ask, #flowbar, #zoom button { transition: none; }
@@ -1427,8 +1430,8 @@ function freeArea() {
   const panelW = open && !sheet ? $('#panel').offsetWidth + 32 : 0;
   let top = ($('header').offsetHeight || 64) + 8 + Math.min(130, $('#context').offsetHeight), left = 16;
   const bottom = open && sheet ? $('#panel').offsetHeight + 24 : $('#ask').offsetHeight + 36;
-  // a playing flow's card sits on the left: the map keeps to its right, or below it when there is no room beside it (phones, narrow windows)
-  if (!$('#flowbar').hidden) {
+  // the left column (flows, the playing step, the tour) sits on the left: the map keeps to its right, or below it when there is no room beside it (phones, narrow windows)
+  if (!$('#flowdock').hidden) {
     const b = $('#flowdock').getBoundingClientRect(), side = b.right - r.left + 16;
     if (!sheet && r.width - panelW - side - 16 >= 200) left = side; else top = Math.max(top, $('header').offsetHeight + 4 + b.height - r.top + 8); // from the bar's real height: the column's own top follows it a frame later
   }
@@ -1448,12 +1451,17 @@ function home(animate) {
   const y1 = seen.length ? Math.max(...seen.map((c) => c.y + c.height)) : b.y + b.h;
   const y = (y1 - y0) * k <= a.h - 24 ? a.y + (a.h - (y1 - y0) * k) / 2 - y0 * k : a.y + 12 - y0 * k;
   setT({ k, x: a.x + 8 - b.x * k, y }, animate);
+  placedAround(home);
 }
+/** fit and home lay the map out beside the left column when it shows; remember that, so closing the column can lay it out again for the full width. */
+let placed = null;
+function placedAround(fn) { placed = $('#flowdock').hidden ? null : { fn, t: { ...state.t } }; }
 function fit(animate) {
   const b = state.bounds; if (!b) return;
   const a = freeArea();
   const k = Math.min(a.w / (b.w + 40), a.h / (b.h + 20), 1.1);
   setT({ k, x: a.x + (a.w - b.w * k) / 2 - b.x * k, y: a.y + Math.max(0, (a.h - b.h * k) / 2) - b.y * k }, animate);
+  placedAround(fit);
 }
 function zoomBy(f, cx, cy) {
   const r = stageRect();
@@ -1959,18 +1967,55 @@ fm.addEventListener('click', (ev) => ev.stopPropagation());
 const dock = $('#flowdock'), fdFlows = $('#fd-flows');
 fm.classList.remove('glass'); fdFlows.append(fm);
 dock.addEventListener('click', (ev) => ev.stopPropagation());
+/** The column shows while any of its cards does (flows, the playing step, or a card an extension added, like the tour). */
+function syncColumn() { const any = [...dock.children].some((x) => !x.hidden); if (dock.hidden === any) dock.hidden = !any; }
 function syncDock() {
   const open = fm.classList.contains('open');
-  fdFlows.hidden = !open; dock.hidden = !open && $('#flowbar').hidden;
+  fdFlows.hidden = !open; syncColumn();
   $('#flows-btn').setAttribute('aria-expanded', String(open));
 }
 new MutationObserver(syncDock).observe(fm, { attributes: true, attributeFilter: ['class'] });
-dock.querySelectorAll('.fd-tog').forEach((b) => b.onclick = () => {
-  const sec = b.closest('.fd'), shut = sec.classList.toggle('collapsed');
+new MutationObserver(syncColumn).observe(dock, { subtree: true, childList: true, attributes: true, attributeFilter: ['hidden'] });
+const CHEV = '<svg class="i" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg>';
+// every card's arrow, including cards added later, collapses or expands that card
+dock.addEventListener('click', (ev) => {
+  const b = ev.target.closest('.fd-tog'); if (!b) return;
+  const shut = b.closest('.fd').classList.toggle('collapsed');
   b.setAttribute('aria-expanded', String(!shut));
 });
-// whenever the column changes size (a section collapses, a longer step, the bar above it wraps), keep the step's boxes in sight
-{ const ro = new ResizeObserver(() => { if (state.flow?.boxes) showBoxes(state.flow.boxes); }); ro.observe(dock); ro.observe($('header')); }
+/** Adds a card to the left column: a header (title, then the collapse arrow at its top right) over a part that scrolls on its own. */
+function dockSection({ id, title = '', label = title }) {
+  const sec = document.createElement('section');
+  sec.className = 'fd glass'; sec.id = id; sec.hidden = true;
+  sec.innerHTML = `<div class="fd-h"><span></span><button type="button" class="fd-tog" aria-expanded="true">${CHEV}</button></div><div class="fd-b"></div>`;
+  sec.querySelector('.fd-h > span').textContent = title;
+  sec.querySelector('.fd-tog').setAttribute('aria-label', `Collapse ${label}`);
+  dock.append(sec);
+  return sec;
+}
+/** The column pushes the map aside like a sidebar: when it opens over boxes, the map moves over by the column's size (no further,
+    so the view keeps its place), and moves back when it closes if the map wasn't moved meanwhile. */
+let cleared = null;
+function clearColumn() {
+  const { k, x, y } = state.t;
+  if (dock.hidden) {
+    const same = (t) => t && t.x === x && t.y === y && t.k === k; // only if the map hasn't been moved since
+    if (same(placed?.t)) placed.fn(true); // laid out around the column (the tour's fit, a home): lay it out again for the full width
+    else if (same(cleared)) setT({ k, x: x - cleared.dx, y: y - cleared.dy }, true);
+    cleared = null; placed = null; return;
+  }
+  if (cleared) return; // once per opening: it already made room
+  const r = stageRect(), db = dock.getBoundingClientRect(), a = freeArea(), side = a.x > 16;
+  const col = { l: db.left - r.left, t: db.top - r.top, r: db.right - r.left + 16, b: db.bottom - r.top + 8 };
+  // like a sidebar opening: if any box sits behind the column, the map moves over by the column's own size, never further
+  const behind = (state.boxes || []).some((c) => { const l = c.x * k + x, t = c.y * k + y; return !(l + c.width * k <= col.l || l >= col.r || t + c.height * k <= col.t || t >= col.b); });
+  if (!behind) return;
+  const dx = side ? col.r - col.l : 0, dy = side ? 0 : col.b - col.t;
+  setT({ k, x: x + dx, y: y + dy }, true);
+  cleared = { k, x: x + dx, y: y + dy, dx: (cleared?.dx || 0) + dx, dy: (cleared?.dy || 0) + dy };
+}
+// whenever the column changes size (it opens, a card collapses, a longer step, the bar above it wraps): clear the map, then keep the step's boxes in sight
+{ const ro = new ResizeObserver(() => { clearColumn(); if (state.flow?.boxes) showBoxes(state.flow.boxes); }); ro.observe(dock); ro.observe($('header')); }
 /** Menus close on a click elsewhere, but the list of flows stays while a flow plays. */
 function closeFlows() { if (!state.flow) fm.classList.remove('open'); }
 function renderFlowMenu() {
@@ -2592,6 +2637,7 @@ window.Floorplan = Object.freeze({
   go, reveal, select, open, up, fit, render: (o) => render({ keepTransform: true, ...o }), refreshPanel: () => renderPanel(),
   showBoard, playFlow, startFlow, stopFlow: () => { if (state.flow) stopFlow(); },
   freeArea: () => freeArea(),
+  dockSection: (opts) => dockSection(opts), // a card in the left column, beside Flows and the playing step
   closeMenus: () => { closeMenu(); closeFlows(); legendEl.classList.remove('open'); },
   // asking
   addAskContext, ask: (text) => { closeSheet(); askInput.value = text; submitAsk(); }, askEngine: () => askState.engine,
