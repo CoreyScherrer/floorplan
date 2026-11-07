@@ -56,5 +56,8 @@ test('each card scrolls on its own and the map stays clear of the column', () =>
   assert.doesNotMatch(html, /#flowdock #flowmenu \{[^}]*max-height: 40vh/);
   assert.match(html, /if \(!\$\('#flowdock'\)\.hidden\) \{/, 'the map keeps clear whenever the column shows, not only during a flow');
   assert.match(html, /function clearColumn\(\) \{/);
+  assert.match(html, /if \(c\.r <= col\.l \|\| c\.l >= col\.r \|\| c\.b <= col\.t \|\| c\.t >= col\.b\) continue; \/\/ not behind the column/, 'only boxes actually behind the column move the map');
+  assert.match(html, /for \(let n = 0; n < 12 && \(dx \|\| dy\); n\+\+\) \{/, 'no box is left straddling the column edge');
+  assert.match(html, /if \(cleared && cleared\.x === x && cleared\.y === y && cleared\.k === k\) setT\(\{ k, x: x - cleared\.dx, y: y - cleared\.dy \}, true\);/, 'closing the column puts the map back');
   assert.match(html, /new ResizeObserver\(\(\) => \{ clearColumn\(\);/);
 });

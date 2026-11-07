@@ -1988,12 +1988,32 @@ function dockSection({ id, title = '', label = title }) {
   dock.append(sec);
   return sec;
 }
-/** Nothing on the map starts behind the column: when it opens or changes size, the map slides just clear of it. */
+/** Nothing on screen sits behind the column: when it opens or grows, the map slides just far enough to clear the boxes it would cover
+    (no further, so a zoomed-in view stays where it was), and slides back when it closes if the map wasn't moved meanwhile. */
+let cleared = null;
 function clearColumn() {
-  const b = state.bounds; if (dock.hidden || !b) return;
-  const a = freeArea(), { k, x, y } = state.t, side = a.x > 16;
-  const dx = side ? Math.max(0, a.x - (b.x * k + x)) : 0, dy = side ? 0 : Math.max(0, a.y - (b.y * k + y));
-  if (dx || dy) setT({ k, x: x + dx, y: y + dy }, true);
+  const { k, x, y } = state.t;
+  if (dock.hidden) {
+    if (cleared && cleared.x === x && cleared.y === y && cleared.k === k) setT({ k, x: x - cleared.dx, y: y - cleared.dy }, true);
+    cleared = null; return;
+  }
+  const r = stageRect(), db = dock.getBoundingClientRect(), a = freeArea(), side = a.x > 16;
+  const col = { l: db.left - r.left, t: db.top - r.top, r: db.right - r.left + 16, b: db.bottom - r.top + 8 };
+  let dx = 0, dy = 0;
+  const rects = (state.boxes || []).map((c) => ({ l: c.x * k + x, t: c.y * k + y, r: (c.x + c.width) * k + x, b: (c.y + c.height) * k + y }));
+  for (const c of rects) {
+    if (c.r <= col.l || c.l >= col.r || c.b <= col.t || c.t >= col.b) continue; // not behind the column
+    if (side) dx = Math.max(dx, col.r - c.l); else dy = Math.max(dy, col.b - c.t);
+  }
+  // sliding can bring a box from off the edge to straddle the column's edge: slide on until none does (a box left wholly behind it stays out of sight, as it was)
+  for (let n = 0; n < 12 && (dx || dy); n++) {
+    const more = rects.filter((c) => side ? c.l + dx < col.r && c.r + dx > col.r && c.b > col.t && c.t < col.b : c.t + dy < col.b && c.b + dy > col.b && c.r > col.l && c.l < col.r);
+    if (!more.length) break;
+    for (const c of more) if (side) dx = Math.max(dx, col.r - c.l); else dy = Math.max(dy, col.b - c.t);
+  }
+  if (!dx && !dy) return;
+  setT({ k, x: x + dx, y: y + dy }, true);
+  cleared = { k, x: x + dx, y: y + dy, dx: (cleared?.dx || 0) + dx, dy: (cleared?.dy || 0) + dy };
 }
 // whenever the column changes size (it opens, a card collapses, a longer step, the bar above it wraps): clear the map, then keep the step's boxes in sight
 { const ro = new ResizeObserver(() => { clearColumn(); if (state.flow?.boxes) showBoxes(state.flow.boxes); }); ro.observe(dock); ro.observe($('header')); }
