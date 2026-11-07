@@ -58,6 +58,8 @@ test('each card scrolls on its own and the map stays clear of the column', () =>
   assert.match(html, /function clearColumn\(\) \{/);
   assert.match(html, /if \(!behind\) return;\n  const dx = side \? col\.r - col\.l : 0, dy = side \? 0 : col\.b - col\.t;/, 'the map moves by the column\'s size, never further');
   assert.match(html, /if \(cleared\) return; \/\/ once per opening/, 'it moves once per opening, not again as the column grows');
-  assert.match(html, /if \(cleared && cleared\.x === x && cleared\.y === y && cleared\.k === k\) setT\(\{ k, x: x - cleared\.dx, y: y - cleared\.dy \}, true\);/, 'closing the column puts the map back');
+  assert.match(html, /else if \(same\(cleared\)\) setT\(\{ k, x: x - cleared\.dx, y: y - cleared\.dy \}, true\);/, 'closing the column puts the map back');
+  assert.match(html, /if \(same\(placed\?\.t\)\) placed\.fn\(true\);/, 'a fit made around the column is redone for the full width when it closes');
+  assert.match(html, /placedAround\(fit\);/); assert.match(html, /placedAround\(home\);/);
   assert.match(html, /new ResizeObserver\(\(\) => \{ clearColumn\(\);/);
 });

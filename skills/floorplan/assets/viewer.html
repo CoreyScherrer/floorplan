@@ -1451,12 +1451,17 @@ function home(animate) {
   const y1 = seen.length ? Math.max(...seen.map((c) => c.y + c.height)) : b.y + b.h;
   const y = (y1 - y0) * k <= a.h - 24 ? a.y + (a.h - (y1 - y0) * k) / 2 - y0 * k : a.y + 12 - y0 * k;
   setT({ k, x: a.x + 8 - b.x * k, y }, animate);
+  placedAround(home);
 }
+/** fit and home lay the map out beside the left column when it shows; remember that, so closing the column can lay it out again for the full width. */
+let placed = null;
+function placedAround(fn) { placed = $('#flowdock').hidden ? null : { fn, t: { ...state.t } }; }
 function fit(animate) {
   const b = state.bounds; if (!b) return;
   const a = freeArea();
   const k = Math.min(a.w / (b.w + 40), a.h / (b.h + 20), 1.1);
   setT({ k, x: a.x + (a.w - b.w * k) / 2 - b.x * k, y: a.y + Math.max(0, (a.h - b.h * k) / 2) - b.y * k }, animate);
+  placedAround(fit);
 }
 function zoomBy(f, cx, cy) {
   const r = stageRect();
@@ -1994,8 +1999,10 @@ let cleared = null;
 function clearColumn() {
   const { k, x, y } = state.t;
   if (dock.hidden) {
-    if (cleared && cleared.x === x && cleared.y === y && cleared.k === k) setT({ k, x: x - cleared.dx, y: y - cleared.dy }, true);
-    cleared = null; return;
+    const same = (t) => t && t.x === x && t.y === y && t.k === k; // only if the map hasn't been moved since
+    if (same(placed?.t)) placed.fn(true); // laid out around the column (the tour's fit, a home): lay it out again for the full width
+    else if (same(cleared)) setT({ k, x: x - cleared.dx, y: y - cleared.dy }, true);
+    cleared = null; placed = null; return;
   }
   if (cleared) return; // once per opening: it already made room
   const r = stageRect(), db = dock.getBoundingClientRect(), a = freeArea(), side = a.x > 16;
